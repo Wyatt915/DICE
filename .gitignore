@@ -1,0 +1,7 @@
+src/crap/
+resources/
+sqlite/
+*.out
+*.db
+*.dice
+*.rpg
