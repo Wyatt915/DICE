@@ -23,11 +23,19 @@ class Editor{
         int numlines();
         std::string disp();
         int process(int);
+        bool move_up();
+        bool move_down();
+        bool move_left();
+        bool move_right();
+        void update(int);
         ~Editor();
     private:
         int mode;
         int columns;
         int lines;
+        int scroll;
+        int curx;
+        int cury;
         Buffer* data;
         WINDOW* edwin;
 };

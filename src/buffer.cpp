@@ -21,31 +21,35 @@ void flow(std::vector<std::string>& l,std::string in, int columns){
     l.push_back(std::string(first, it)); 
 }
 
-
-
 Buffer::Buffer(){
     data.push_back("");
     columns = 80;
     lines = 1;
+    xOff = 1; yOff = 1;
 }
 
 Buffer::Buffer(int c) : columns(c){
     data.push_back("");
     lines = 1;
+    xOff = 1; yOff = 1;
 }
 
 Buffer::Buffer(std::string in){
     columns = 80;
     flow(data, in, columns);
     lines = data.size();
+    xOff = 1; yOff = 1;
 }
 
 Buffer::Buffer(std::string in, int c) : columns(c) {
     flow(data, in, columns);
     lines = data.size();
+    xOff = 1; yOff = 1;
 }
 
-
+int effcol(){
+    return 0;
+}
 
 std::string Buffer::to_string(){
     std::string out = "";
@@ -57,6 +61,10 @@ std::string Buffer::to_string(){
 
 const char* Buffer::getline(int l){
     return data[l].c_str();
+}
+
+int Buffer::getlinelen(int row){
+    return data[row - yOff].length();
 }
 
 int Buffer::numlines(){
@@ -75,9 +83,9 @@ std::string vec_to_string(std::vector<std::string>::iterator first, std::vector<
     
 //inserts a char into the buffer, and updates the cursor position accordingly
 int Buffer::insert(char c, int& row, int& col){
-    int effrow = row - 1; //Effective row: subtract 1 due to the offset of the text within the window (+1,+1)
+    int effrow = row - yOff; //Effective row: subtract 1 due to the offset of the text within the window (+1,+1)
     if(col > data[effrow].length()){ col = data[effrow].length() + 1; }
-    int effcol = col - 1;
+    int effcol = col - xOff;
     auto it = data[effrow].begin();
     std::advance(it, effcol);
     data[effrow].insert(it, c);
@@ -95,7 +103,7 @@ int Buffer::insert(char c, int& row, int& col){
         row++;
         effrow++;
         col = part.length() + 1;
-        effcol = col - 1;
+        effcol = col - xOff;
         if(effrow < data.size()){
             data[effrow].insert(0, part);
         }
@@ -113,4 +121,26 @@ int Buffer::insert(char c, int& row, int& col){
         flow(data, tail, columns);
     }
     return rval;
+}
+
+int Buffer::remove(int& row, int& col){
+    int effrow = row - yOff; //Effective row: subtract 1 due to the offset of the text within the window (+1,+1)
+    if(col > data[effrow].length()){ col = data[effrow].length() + 1; }
+    int effcol = col - xOff;
+    auto it = data[effrow].begin();
+    std::advance(it, effcol);
+    data[effrow].erase(it);
+    if(effrow < data.size() - 1){
+        auto wordBegin = data[effrow+1].begin();
+        auto wordEnd = wordBegin;
+        while(*wordEnd != ' ' && wordEnd != data[effrow].end()){
+            wordEnd++;
+        }
+        if(std::distance(wordBegin, wordEnd) <= columns - data[effrow].size()){
+            std::string tail = vec_to_string(data.begin() + effrow, data.end());
+            data.erase(data.begin() + effrow, data.end());
+            flow(data, tail, columns);
+        }
+    }
+    return 0;
 }

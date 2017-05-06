@@ -3,7 +3,9 @@
 
 Editor::Editor(WINDOW* w){
     mode = NORMAL;
+    scroll = 0;
     edwin = w;
+    getyx(edwin, cury, curx);
     getmaxyx(edwin, lines, columns);
     columns -= 2;
     data = new Buffer(columns);
@@ -11,7 +13,9 @@ Editor::Editor(WINDOW* w){
 
 Editor::Editor(WINDOW* w, std::string in){
     mode = NORMAL;
+    scroll = 0;
     edwin = w;
+    getyx(edwin, cury, curx);
     getmaxyx(edwin, lines, columns);
     columns -= 2;
     data = new Buffer(in, columns);
@@ -29,52 +33,127 @@ int Editor::numlines(){
     return data->numlines();
 }
 
+void Editor::update(int begin){
+    if(cury + begin < 1) { begin = 0; }
+    wmove(edwin, cury+begin, curx);
+    wclrtobot(edwin);
+    for(int i = 0; i < data->numlines() + scroll + begin; i++){
+        wmove(edwin, i+1+begin, 1);
+        waddstr(edwin, data->getline(i + scroll + begin));
+    }
+    box(edwin, 0, 0);
+    wmove(edwin, cury, curx);
+    wrefresh(edwin);
+}
+
+int min(int x, int y){
+    return x < y ? x : y;
+}
+
+bool Editor::move_up(){
+    cury--;
+    bool res = true;
+    if(cury < 1){
+        res = false;
+        cury = 1;
+        if(scroll > 0){
+            scroll--;
+            res = true;
+            update(0);
+        }
+    }
+    wmove(edwin, cury, curx);
+    return res;
+}
+
+bool Editor::move_down(){
+    cury++;
+    bool res = true;
+    if(cury >= data->numlines()){
+        res = false;
+        cury = data->numlines();
+        if(data->numlines() > scroll + cury){
+            scroll++;
+            res = true;
+            update(0);
+        }
+    }
+    wmove(edwin, cury, curx);
+    return res;
+}
+
+bool Editor::move_left(){
+    if(curx > 1){
+        curx--;
+        wmove(edwin, cury, curx);
+        return true;
+    }
+    else if(move_up()){
+        curx = columns + 1;
+        wmove(edwin, cury, curx);
+        return true;
+    }
+}
+
+bool Editor::move_right(){
+    curx++;
+    if(curx <= data->getlinelen(cury)){
+        wmove(edwin, cury, curx);
+        return true;
+    }
+    if(move_down()){
+        curx = 1;
+        wmove(edwin, cury, curx);
+        return true;
+    }
+    curx--;
+    return false;
+}
+
 int Editor::process(int c){
-    int cx, cy, mx, my;
-    getyx(edwin, cy, cx);
-    getmaxyx(edwin, my, mx);
-    int scrollOffset = 0;
+    getyx(edwin, cury, curx);
     int insertType = -1;
     switch (c) 
     {   
         case KEY_LEFT:
-            if(cx > 1) cx--;
+            move_left();
             break;
         case KEY_RIGHT:
-            if(cx < mx - 1)
-            cx++;
+            move_right();
             break;
         case KEY_UP:
-            cy--;
+            move_up();
             break;
         case KEY_DOWN:
-            cy++;
+            move_down();
+            break;
+        case KEY_BACKSPACE:
+            if(move_left()){
+               data->remove(cury, curx);
+               update(0);
+            }
+            break; 
+            case KEY_DC:
+            data->remove(cury, curx);
+            update(0);
             break;
         default:
-            insertType = data->insert(c, cy, cx);
+            insertType = data->insert(c, cury, curx);
+            wmove(edwin, cury, curx);
     }
     switch (insertType){
         case BUFF_TRIV:
-            wclrtoeol(edwin);
-            break;
         case BUFF_WRAP:
-            wclrtobot(edwin);
+            update(0);
             break;
         case BUFF_CRLF:
-            wmove(edwin, cy-1, cx);
-            wclrtobot(edwin);
+            update(-1);
     }
 
-    box(edwin, 0, 0);
-
-    if(insertType > -1){
-        for(int i = 0; i < data->numlines(); i++){
-            wmove(edwin, i+1, 1);
-            waddstr(edwin, data->getline(i));
-        }
+   // box(edwin, 0, 0);
+    if(curx > data->getlinelen(cury)){
+        curx = data->getlinelen(cury) + 1;
     }
-
-    wmove(edwin, cy, cx);
     wrefresh(edwin);
 
     return ED_INS; 

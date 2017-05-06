@@ -21,7 +21,7 @@ int main(int argc, char* argv[]){
     cx = 0; cy = 0;
     getmaxyx(stdscr, h, w);
     WINDOW * win = newwin(h/2, w/2, h/4, w/4);
-	Editor ed(win);
+	Editor ed(win, s);
     refresh();
     for(int i = 0; i < ed.numlines(); i++){
         wmove(win, i+1, 1);
