@@ -27,9 +27,10 @@ class Editor{
         bool move_down();
         bool move_left();
         bool move_right();
-        void update(int);
+        void update();
         ~Editor();
     private:
+        int margin;
         int mode;
         int columns;
         int lines;

@@ -7,8 +7,11 @@ Editor::Editor(WINDOW* w){
     edwin = w;
     getyx(edwin, cury, curx);
     getmaxyx(edwin, lines, columns);
-    columns -= 2;
+    margin = 1;
+    columns -= 2 * margin;
+    lines -= 2*margin;
     data = new Buffer(columns);
+    update();
 }
 
 Editor::Editor(WINDOW* w, std::string in){
@@ -17,8 +20,11 @@ Editor::Editor(WINDOW* w, std::string in){
     edwin = w;
     getyx(edwin, cury, curx);
     getmaxyx(edwin, lines, columns);
-    columns -= 2;
+    margin = 1;
+    columns -= 2 * margin;
+    lines -= 2*margin;
     data = new Buffer(in, columns);
+    update();
 }
 
 Editor::~Editor(){
@@ -33,17 +39,33 @@ int Editor::numlines(){
     return data->numlines();
 }
 
-void Editor::update(int begin){
-    if(cury + begin < 1) { begin = 0; }
-    wmove(edwin, cury+begin, curx);
+void Editor::update(){
+    wmove(edwin, 0, 0);
     wclrtobot(edwin);
-    for(int i = 0; i < data->numlines() + scroll + begin; i++){
-        wmove(edwin, i+1+begin, 1);
-        waddstr(edwin, data->getline(i + scroll + begin));
+    int i;
+    for(i = 0; i < data->numlines() && i < lines; i++){
+        wmove(edwin, i + margin, margin);
+        waddstr(edwin, data->getline(i + scroll));
     }
+
+    
+    //start_color();
+
+    init_pair(1, COLOR_BLUE, COLOR_BLACK);
+    wattron(edwin, COLOR_PAIR(1));
+    
+    for(; i < lines; i++){
+        wmove(edwin, i + margin, margin);
+        waddch(edwin, '~');
+    }
+    
+    //wrefresh(edwin);
+    wattroff(edwin, COLOR_PAIR(1));
+
     box(edwin, 0, 0);
     wmove(edwin, cury, curx);
     wrefresh(edwin);
+    //refresh();
 }
 
 int min(int x, int y){
@@ -53,13 +75,13 @@ int min(int x, int y){
 bool Editor::move_up(){
     cury--;
     bool res = true;
-    if(cury < 1){
+    if(cury < margin){
         res = false;
-        cury = 1;
+        cury = margin;
         if(scroll > 0){
             scroll--;
             res = true;
-            update(0);
+            update();
         }
     }
     wmove(edwin, cury, curx);
@@ -75,7 +97,7 @@ bool Editor::move_down(){
         if(data->numlines() > scroll + cury){
             scroll++;
             res = true;
-            update(0);
+            update();
         }
     }
     wmove(edwin, cury, curx);
@@ -83,13 +105,13 @@ bool Editor::move_down(){
 }
 
 bool Editor::move_left(){
-    if(curx > 1){
+    if(curx > margin){
         curx--;
         wmove(edwin, cury, curx);
         return true;
     }
     else if(move_up()){
-        curx = columns + 1;
+        curx = data->getlinelen(columns) + margin;
         wmove(edwin, cury, curx);
         return true;
     }
@@ -97,16 +119,18 @@ bool Editor::move_left(){
 
 bool Editor::move_right(){
     curx++;
-    if(curx <= data->getlinelen(cury)){
+    if(curx <= data->getlinelen(cury) + margin){
         wmove(edwin, cury, curx);
         return true;
     }
+
     if(move_down()){
-        curx = 1;
+        curx = margin;
         wmove(edwin, cury, curx);
         return true;
     }
     curx--;
+    wmove(edwin, cury, curx);
     return false;
 }
 
@@ -130,30 +154,28 @@ int Editor::process(int c){
         case KEY_BACKSPACE:
             if(move_left()){
                data->remove(cury, curx);
-               update(0);
+               update();
             }
             break; 
-            case KEY_DC:
+        case KEY_DC:
             data->remove(cury, curx);
-            update(0);
+            update();
             break;
         default:
             insertType = data->insert(c, cury, curx);
             wmove(edwin, cury, curx);
-    }
-    switch (insertType){
-        case BUFF_TRIV:
-        case BUFF_WRAP:
-            update(0);
-            break;
-        case BUFF_CRLF:
-            update(-1);
+            update();
     }
 
-   // box(edwin, 0, 0);
-    if(curx > data->getlinelen(cury)){
-        curx = data->getlinelen(cury) + 1;
-    }
+    //box(edwin, 0, 0);
+    //if(curx > data->getlinelen(cury)){
+    //    curx = data->getlinelen(cury) + 1;
+    //}
+
+    move(0,0);
+    addstr(data->debug());
+    wmove(edwin, cury, curx);
+    refresh();
     wrefresh(edwin);
 
     return ED_INS; 

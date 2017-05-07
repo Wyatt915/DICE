@@ -23,13 +23,14 @@ class Buffer{
         const char* getline(int);
         int numlines();
         int getlinelen(int);
+        int find_pos_in_raw(int, int);
+        void get_coord_from_pos(int&, int&, int);
+        const char* debug();
     private:
-        int xOff;
-        int yOff;
+        int margin;
         int columns;
-        int lines;
-        //int effrow();
-        //int effcol();
-        std::vector<std::string> data;
+        std::string raw;
+        std::string debuginfo;
+        std::vector<std::string> disp;
 };
 

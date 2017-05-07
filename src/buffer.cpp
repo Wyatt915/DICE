@@ -1,15 +1,14 @@
 #include "buffer.hpp"
 #include <algorithm>
 
-void flow(std::vector<std::string>& l,std::string in, int columns){
+void flow(std::vector<std::string>& wrap,std::string in, int columns){
     std::string::iterator wspos = in.begin(); //position of last whitespace
     std::string::iterator it = in.begin();
     std::string::iterator first = in.begin();
-    int d;
+    
     while(it != in.end()){
-        d = std::distance(first, it);
-        if(d > columns){
-            l.push_back(std::string(first, wspos)); //TODO: Handle cases where a word may be longer than the number of columns
+        if(std::distance(first, it) >= columns){
+            wrap.push_back(std::string(first, wspos)); //TODO: Handle cases where a word may be longer than the number of columns
             first = wspos;
             first++;
             it = first;
@@ -18,33 +17,37 @@ void flow(std::vector<std::string>& l,std::string in, int columns){
         else if(*it == ' '){ wspos = it; }
         it++;
     }
-    l.push_back(std::string(first, it)); 
+    wrap.push_back(std::string(first, it)); 
 }
 
 Buffer::Buffer(){
-    data.push_back("");
     columns = 80;
-    lines = 1;
-    xOff = 1; yOff = 1;
+    raw = "";
+    disp.push_back(raw);
+    //lines = 1;
+    margin = 1;
 }
 
 Buffer::Buffer(int c) : columns(c){
-    data.push_back("");
-    lines = 1;
-    xOff = 1; yOff = 1;
+    //lines = 1;
+    raw = "";
+    disp.push_back(raw);
+    margin = 1;
 }
 
 Buffer::Buffer(std::string in){
+    raw = in;
     columns = 80;
-    flow(data, in, columns);
-    lines = data.size();
-    xOff = 1; yOff = 1;
+    flow(disp, raw, columns);
+    //lines = disp.size();
+    margin = 1;
 }
 
 Buffer::Buffer(std::string in, int c) : columns(c) {
-    flow(data, in, columns);
-    lines = data.size();
-    xOff = 1; yOff = 1;
+    raw = in;
+    flow(disp, raw, columns);
+    //lines = disp.size();
+    margin = 1;
 }
 
 int effcol(){
@@ -53,22 +56,22 @@ int effcol(){
 
 std::string Buffer::to_string(){
     std::string out = "";
-    for(std::string l : data){
+    for(std::string l : disp){
         out += l + "\n\r";
     }
     return out;
 }
 
 const char* Buffer::getline(int l){
-    return data[l].c_str();
+    return disp[l].c_str();
 }
 
 int Buffer::getlinelen(int row){
-    return data[row - yOff].length();
+    return disp[row - margin].length();
 }
 
 int Buffer::numlines(){
-    return data.size();
+    return disp.size();
 }
 
 std::string vec_to_string(std::vector<std::string>::iterator first, std::vector<std::string>::iterator last){
@@ -80,67 +83,159 @@ std::string vec_to_string(std::vector<std::string>::iterator first, std::vector<
     }
     return out;
 }
-    
+
+/*
 //inserts a char into the buffer, and updates the cursor position accordingly
 int Buffer::insert(char c, int& row, int& col){
-    int effrow = row - yOff; //Effective row: subtract 1 due to the offset of the text within the window (+1,+1)
-    if(col > data[effrow].length()){ col = data[effrow].length() + 1; }
-    int effcol = col - xOff;
-    auto it = data[effrow].begin();
+    int effrow = row - margin; //Effective row: subtract 1 due to the offset of the text within the window (+1,+1)
+    if(col > disp[effrow].length()){ col = disp[effrow].length() + 1; }
+    int effcol = col - margin;
+    auto it = disp[effrow].begin();
     std::advance(it, effcol);
-    data[effrow].insert(it, c);
+    disp[effrow].insert(it, c);
     int rval = BUFF_TRIV;
 
     if(effcol >= columns - 1){
         rval = BUFF_CRLF;
         auto wordBegin = it;
-        while(*wordBegin != ' ' && wordBegin != data[effrow].begin()){
+        while(*wordBegin != ' ' && wordBegin != disp[effrow].begin()){
             wordBegin--;
         }
         wordBegin++; //set to one after the last whitespace
-        std::string part(wordBegin, data[effrow].end());
-        data[effrow].erase(wordBegin, data[effrow].end());
+        std::string part(wordBegin, disp[effrow].end());
+        disp[effrow].erase(wordBegin, disp[effrow].end());
         row++;
         effrow++;
         col = part.length() + 1;
-        effcol = col - xOff;
-        if(effrow < data.size()){
-            data[effrow].insert(0, part);
+        effcol = col - margin;
+        if(effrow < disp.size()){
+            disp[effrow].insert(0, part);
         }
         else{
-            data.push_back(part);
+            disp.push_back(part);
         }
     }
     else{
         col++;
     }
-    if(data[effrow].length() > columns){
+    if(disp[effrow].length() > columns){
         if(rval == BUFF_TRIV){ rval = BUFF_WRAP; } //CRLF overrides WRAP
-        std::string tail = vec_to_string(data.begin() + effrow, data.end());
-        data.erase(data.begin() + effrow, data.end());
-        flow(data, tail, columns);
+        std::string tail = vec_to_string(disp.begin() + effrow, disp.end());
+        disp.erase(disp.begin() + effrow, disp.end());
+        flow(disp, tail, columns);
     }
     return rval;
 }
 
+
+
 int Buffer::remove(int& row, int& col){
-    int effrow = row - yOff; //Effective row: subtract 1 due to the offset of the text within the window (+1,+1)
-    if(col > data[effrow].length()){ col = data[effrow].length() + 1; }
-    int effcol = col - xOff;
-    auto it = data[effrow].begin();
+    int effrow = row - margin; //Effective row: subtract 1 due to the offset of the text within the window (+1,+1)
+    if(col > disp[effrow].length()){ col = disp[effrow].length() + 1; }
+    int effcol = col - margin;
+    auto it = disp[effrow].begin();
     std::advance(it, effcol);
-    data[effrow].erase(it);
-    if(effrow < data.size() - 1){
-        auto wordBegin = data[effrow+1].begin();
+    disp[effrow].erase(it);
+    if(effrow < disp.size() - 1){
+        auto wordBegin = disp[effrow+1].begin();
         auto wordEnd = wordBegin;
-        while(*wordEnd != ' ' && wordEnd != data[effrow].end()){
+        while(*wordEnd != ' ' && wordEnd != disp[effrow].end()){
             wordEnd++;
         }
-        if(std::distance(wordBegin, wordEnd) <= columns - data[effrow].size()){
-            std::string tail = vec_to_string(data.begin() + effrow, data.end());
-            data.erase(data.begin() + effrow, data.end());
-            flow(data, tail, columns);
+        if(std::distance(wordBegin, wordEnd) <= columns - disp[effrow].size()){
+            std::string tail = vec_to_string(disp.begin() + effrow, disp.end());
+            disp.erase(disp.begin() + effrow, disp.end());
+            flow(disp, tail, columns);
         }
     }
+    return 0;
+}
+*/
+
+const char* Buffer::debug(){
+    return debuginfo.c_str();
+}
+
+int Buffer::find_pos_in_raw(int row, int col){
+    int pos = 0;
+    row -= margin;
+    col -= margin;
+    int i = 0; int j = 0;
+    bool brflag = false;
+    while(!brflag){
+        if(i < row){
+            pos += disp[i].length();
+        }
+        else{
+            while(j < col && j < disp[row].length()){
+                pos++;
+                j++;
+            }
+            brflag = true;
+        }
+        i++;
+    }
+    std::stringstream ss;
+    ss << "coord( " << row << ", " << col << ") -->  position: " << pos << "\n";
+    debuginfo = ss.str();
+    return pos - 1;
+}
+
+void Buffer::get_coord_from_pos(int& row, int& col, int pos){
+    int accum = 0;
+    row = 0;
+    col = 0;
+    bool brflag = false;
+    for(int i = 0; i < disp.size(); i++){
+        for(int j = 0; j < disp[i].length(); j++){
+            if(accum == pos){
+                row = i;
+                col = j;
+            }
+            accum++;
+        }
+    }
+    //row--; //the loop increments row one too many times.
+    //int overshoot = accum - pos;
+    //col = disp[row].length() - overshoot + margin;
+    std::stringstream ss;
+    ss << "position(" << pos << ") --> Coordinate: (" << row << ", " << col << ')';
+    debuginfo += ss.str();
+    row += margin;
+    col += margin;
+}
+
+int Buffer::insert(char c, int& row, int& col){
+    int pos = find_pos_in_raw(row, col);
+    auto it = std::begin(raw);
+    std::advance(it, pos);
+    raw.insert(it, c);
+    pos++;
+    disp.clear();
+    flow(disp, raw, columns);
+    find_pos_in_raw(row, col);
+    get_coord_from_pos(row, col, pos);
+    return 0;
+}
+
+int Buffer::remove(int& row, int& col){
+    if(raw.length() == 0){
+        return 0;
+    }
+    
+    int pos = find_pos_in_raw(row, col);
+    auto it = std::begin(raw);
+    int lc = 0; //loop count
+    while(it != std::end(raw) && lc < pos){
+        it++;
+        lc++;
+    }
+    if(it == std::end(raw)){
+        return 0;
+    }
+    //it--;
+    raw.erase(it);
+    disp.clear();
+    flow(disp, raw, columns);
     return 0;
 }

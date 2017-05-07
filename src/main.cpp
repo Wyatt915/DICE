@@ -9,19 +9,32 @@
 #include <iostream>
 #include <sstream>
 
+void dice_colors(){
+    start_color();
+    if(can_change_color()){
+        init_color(COLOR_BLACK, 75,75,100);
+    }
+    else{
+        move(3,0);
+        addstr("Custom colors not supported on this terminal.");
+    }
+}
+
 int main(int argc, char* argv[]){
-    std::string s = "Thermodynamics is a branch of physics concerned with heat and temperature and their relation to energy and work. The behavior of these quantities is governed by the four laws of thermodynamics, irrespective of the composition or specific properties of the material or system in question. The laws of thermodynamics are explained in terms of microscopic constituents by statistical mechanics. Thermodynamics applies to a wide variety of topics in science and engineering, especially physical chemistry, chemical engineering and mechanical engineering.";
+    std::string thermo = "Thermodynamics is a branch of physics concerned with heat and temperature and their relation to energy and work. The behavior of these quantities is governed by the four laws of thermodynamics, irrespective of the composition or specific properties of the material or system in question. The laws of thermodynamics are explained in terms of microscopic constituents by statistical mechanics. Thermodynamics applies to a wide variety of topics in science and engineering, especially physical chemistry, chemical engineering and mechanical engineering.";
     initscr();
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
+    
+    dice_colors();
 
     int h, w;
     int c, cx, cy;
     cx = 0; cy = 0;
     getmaxyx(stdscr, h, w);
     WINDOW * win = newwin(h/2, w/2, h/4, w/4);
-	Editor ed(win, s);
+	Editor ed(win);
     refresh();
     for(int i = 0; i < ed.numlines(); i++){
         wmove(win, i+1, 1);
