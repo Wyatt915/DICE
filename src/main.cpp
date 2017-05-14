@@ -1,62 +1,40 @@
 #include "editor.hpp"
+#include "curseswrapper.hpp"
 
-
-//#include "sqlite3.h"
-#include <ncurses.h>
-
+#include "sqlite_modern_cpp.h"
 #include <string>
-#include <vector>
+//#include <vector>
 #include <iostream>
-#include <sstream>
-
-void dice_colors(){
-    start_color();
-    if(can_change_color()){
-        init_color(COLOR_BLACK, 75,75,100);
-    }
-    else{
-        move(3,0);
-        addstr("Custom colors not supported on this terminal.");
-    }
-}
 
 int main(int argc, char* argv[]){
-    std::string thermo = "Thermodynamics is a branch of physics concerned with heat and temperature and their relation to energy and work. The behavior of these quantities is governed by the four laws of thermodynamics, irrespective of the composition or specific properties of the material or system in question. The laws of thermodynamics are explained in terms of microscopic constituents by statistical mechanics. Thermodynamics applies to a wide variety of topics in science and engineering, especially physical chemistry, chemical engineering and mechanical engineering.";
-    initscr();
-    cbreak();
-    noecho();
-    keypad(stdscr, TRUE);
-    
-    dice_colors();
-
-    int h, w;
-    int c, cx, cy;
-    cx = 0; cy = 0;
-    getmaxyx(stdscr, h, w);
-    WINDOW * win = newwin(h/2, w/2, h/4, w/4);
-	Editor ed(win);
-    refresh();
-    for(int i = 0; i < ed.numlines(); i++){
-        wmove(win, i+1, 1);
-        waddstr(win, ed.getline(i));
-    }
-    box(win, 0, 0);
-    wrefresh(win);
-    int action = -1;
-    while((c = getch()) != KEY_F(1)){
-        getyx(win, cy, cx);
+    try{
+        std::string thermo = "Thermodynamics is a branch of physics concerned with heat and temperature and their relation to energy and work. The behavior of these quantities is governed by the four laws of thermodynamics, irrespective of the composition or specific properties of the material or system in question. The laws of thermodynamics are explained in terms of microscopic constituents by statistical mechanics. Thermodynamics applies to a wide variety of topics in science and engineering, especially physical chemistry, chemical engineering and mechanical engineering."; 
         
-        ed.process(c);
+        sqlite::database db("test.db");
+        //db << "SELECT * FROM wew;" >> thermo;
+        
+        //initscr();
+        //cbreak();
+        //noecho();
+        //keypad(stdscr, TRUE);
+        
+        //mouse_interval(0);    
 
-        //refresh();
-        //std::stringstream mystr;
-        //mystr << "(" << cy << ", " << cx << ")";
-        //mvaddstr(0,0,mystr.str().c_str());
-        //move(cy, cx);
-        //refresh();
-        //wrefresh(win);
+        //dice_colors();
+
+        //int h, w;
+        //int c, cx, cy;
+        //cx = 0; cy = 0;
+        //getmaxyx(stdscr, h, w);
+        //WINDOW * win = newwin(h/2, w/2, h/4, w/4);
+        start_curses();        
+        Editor ed(thermo);
+        ed.update();
+        ed.listen();
+        end_curses();
     }
-    delwin(win);
-    endwin();
+    catch(std::exception& e){
+        std::cout << e.what() <<"\n";
+    }
     return 0;
 }
