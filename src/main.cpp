@@ -8,11 +8,9 @@
 
 int main(int argc, char* argv[]){
     try{
-        std::string thermo = "Thermodynamics is a branch of physics concerned with heat and temperature and their relation to energy and work. The behavior of these quantities is governed by the four laws of thermodynamics, irrespective of the composition or specific properties of the material or system in question. The laws of thermodynamics are explained in terms of microscopic constituents by statistical mechanics. Thermodynamics applies to a wide variety of topics in science and engineering, especially physical chemistry, chemical engineering and mechanical engineering."; 
-        
+        std::string thermo;        
         sqlite::database db("test.db");
-        //db << "SELECT * FROM wew;" >> thermo;
-        
+        db << "SELECT * FROM wew WHERE ROWID=2" >> thermo;
         //initscr();
         //cbreak();
         //noecho();
