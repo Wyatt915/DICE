@@ -1,7 +1,7 @@
 CC=gcc
 CXX=g++
 CXXFLAGS=-c -std=c++14
-LNFLAGS=-lpthread -ldl -lncurses -lsqlite3 
+LNFLAGS=-lpthread -ldl -lncurses
 
 all: dice
 
@@ -18,7 +18,7 @@ curseswrapper.o: curseswrapper.cpp curseswrapper.hpp
 	$(CXX) $(CXXFLAGS) curseswrapper.cpp
 
 sqlite3.o:
-	$(CC) -Wall -Werror sqlite3.c -c
+	$(CC) -Wall -Werror -Wno-unused sqlite3.c -c
 
 clean:
 	rm *.o

@@ -1,9 +1,9 @@
-src/crap/
-resources/
-sqlite/
-*.out
 *.db
 *.dice
+*.o
+*.out
 *.rpg
 *.swp
 dice
+resources/
+sqlite/

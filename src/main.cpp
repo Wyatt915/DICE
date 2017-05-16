@@ -10,7 +10,7 @@ int main(int argc, char* argv[]){
     try{
         std::string thermo;        
         sqlite::database db("test.db");
-        db << "SELECT * FROM wew WHERE ROWID=2" >> thermo;
+        db << "SELECT * FROM wew WHERE ROWID=1" >> thermo;
         //initscr();
         //cbreak();
         //noecho();
@@ -30,9 +30,11 @@ int main(int argc, char* argv[]){
         ed.update();
         ed.listen();
         end_curses();
+        std::cout << ed.toString();
     }
     catch(std::exception& e){
         std::cout << e.what() <<"\n";
     }
+
     return 0;
 }

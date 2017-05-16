@@ -16,9 +16,11 @@ void flow(std::vector<std::string>& wrap,std::string in, int width){
             continue;
         }
         else if(*it == '\n'){
-            wrap.push_back(std::string(first, it));
-            it++;
+            wrap.push_back(std::string(first, ++it)); //TODO: Handle cases where a word may be longer than the width
             first = it;
+            wspos = it;
+            //it++;
+            continue;
         }
         else if(isspace(*it)){
             wspos = it;
@@ -65,8 +67,8 @@ void Editor::insert(char c){
     curx++;
     if(c == '\n'){
         wrap(row);
-        curx = margin;
         move_down();
+        move_home();
     }
     if(curline.length() > fieldwidth){
         int jump = posInWord(inspos);
@@ -107,6 +109,10 @@ void Editor::remove(){
             wrap(row);
         }
     }
+}
+
+std::string Editor::toString(){
+    return collapse(std::begin(text), std::end(text));
 }
 
 //-------------------------------------------------------------------
