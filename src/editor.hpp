@@ -21,8 +21,6 @@ class Editor{
         Editor(WINDOW*);
         Editor(WINDOW*, std::string);
         Editor(std::string);
-        const char* getline(int);
-        int numlines();
         std::string toString();
         int process(int);
         bool move_up();

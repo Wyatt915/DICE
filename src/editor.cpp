@@ -2,6 +2,8 @@
 
 #include <ctype.h>
 
+#define EFFROW cury - margin + scroll
+
 void flow(std::vector<std::string>& wrap,std::string in, int width){
     std::string::iterator wspos = std::begin(in); //position of last whitespace
     std::string::iterator it = std::begin(in);
@@ -58,7 +60,7 @@ void Editor::wrap(int row){
 }
 
 void Editor::insert(char c){
-    int row = cury - margin + scroll;
+    int row = EFFROW;
     std::string& curline = text[row];
     if(curx - margin > curline.length()) { return; }
     auto inspos = std::begin(curline);
@@ -91,10 +93,11 @@ int firstWordLen(std::string in){
 }
 
 void Editor::remove(){
-    int row = cury - margin + scroll;
+    int row = EFFROW;
     auto txtit = std::begin(text);
     std::advance(txtit, row);
     std::string& curline  = text[row];
+    if(curx - margin > curline.length()) { return; }
     auto rmpos = std::begin(curline);
     std::advance(rmpos, curx - margin);
     if(rmpos != std::end(curline)){
@@ -103,12 +106,8 @@ void Editor::remove(){
     if(curline == "" && text.size() > 1){
         text.erase(txtit);
     }
-    if(row < text.size() - 1){
-        int l = firstWordLen(text[row+1]);
-        if(l + curline.length() <= fieldwidth){
-            wrap(row);
-        }
-    }
+    wrap(row);
+    update();
 }
 
 std::string Editor::toString(){
@@ -233,18 +232,17 @@ void Editor::update(){
     //refresh();F
 }
 
-int min(int x, int y){
-    return x < y ? x : y;
-}
-
 bool Editor::move_home(){
     curx = margin;
     wmove(edwin, cury, curx);
+    return true;
 }
 
 bool Editor::move_end(){
-    curx = text[cury - margin + scroll].length() + margin;
+    int nladj = text[EFFROW].back() == '\n' ? 1 : 0;  //Adjustment if there is a newline char.  we do not want to be able to insert after a newline
+    curx = text[EFFROW].length() + margin - nladj;
     wmove(edwin, cury, curx);
+    return true;
 }
 
 bool Editor::move_up(){
@@ -259,10 +257,10 @@ bool Editor::move_up(){
             update();
         }
     }
-    int len = text[cury - margin + scroll].length();
+    int len = text[EFFROW].length();
     
     if(len >= 0 && curx - margin > len){
-        curx = len + margin;
+        move_end();
     }
     
     wmove(edwin, cury, curx);
@@ -285,15 +283,15 @@ bool Editor::move_down(){
         update();
         return true;
     }
-    if(cury - margin + scroll >= text.size()){
+    if(EFFROW >= text.size()){
         res = false;
         cury--;
     }
     
-    int len = text[cury - margin + scroll].length();
+    int len = text[EFFROW].length();
     
     if(len >= 0 && curx > len){
-        curx = len + margin;
+        move_end();
     }
     wmove(edwin, cury, curx);
     return res;
@@ -306,26 +304,29 @@ bool Editor::move_left(){
         return true;
     }
     else if(move_up()){
-        curx = text[cury - margin + scroll].length() + margin;
-        wmove(edwin, cury, curx);
+        move_end();
         return true;
     }
+    return false;
 }
 
 bool Editor::move_right(){
-    if(curx + 1 <= text[cury - margin + scroll].length() + margin){
-        curx++;
+    curx++;
+    if(curx <= text[EFFROW].length() + margin){
+        if(text[EFFROW][curx - margin] == '\n'){
+            if(move_down()){
+                return move_home();
+            }
+        }
+        
         wmove(edwin, cury, curx);
         return true;
     }
     else if(move_down()){
-        curx = margin;
-        wmove(edwin, cury, curx);
+        move_home();
         return true;
     }
-    else{
-        return false;
-    }
+    return false;
 }
 
 int Editor::process(int c){

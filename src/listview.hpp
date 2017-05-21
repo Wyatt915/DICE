@@ -5,9 +5,6 @@
 #include <string>
 #include <vector>
 
-#define NORMAL 0
-#define INSERT 1
-
 typedef struct _win_st WINDOW;
 
 class ListView{
@@ -36,6 +33,7 @@ class ListView{
         int scroll;
         int curx;
         int cury;
+        int selection;
         std::vector<std::string> text;
-        WINDOW* edwin;
+        WINDOW* lwin;
 };
