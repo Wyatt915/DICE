@@ -8,20 +8,40 @@ void flow(std::vector<std::string>& wrap,std::string in, int width){
     std::string::iterator wspos = std::begin(in); //position of last whitespace
     std::string::iterator it = std::begin(in);
     std::string::iterator first = std::begin(in);
-    
+    std::string line;
     while(it != in.end()){
         if(std::distance(first, it) >= width){
-            wrap.push_back(std::string(first, ++wspos)); //TODO: Handle cases where a word may be longer than the width
-            first = wspos;
-            //first++;
-            it = first;
+            line = std::string(first, ++wspos);
+            it = wspos;
+            if(line.length() <= width){
+                wrap.push_back(line); //TODO: Handle cases where a word may be longer than the width
+                first = wspos;
+            }
+            else{
+                while(std::distance(first, it) >= width){
+                    it--;
+                }
+                wrap.push_back(std::string(first, it));
+                first = it;
+                it++;
+            }
             continue;
         }
         else if(*it == '\n'){
-            wrap.push_back(std::string(first, ++it)); //TODO: Handle cases where a word may be longer than the width
-            first = it;
-            wspos = it;
-            //it++;
+            line = std::string(first, ++it);
+            if(line.length() < width){
+                wrap.push_back(line); //TODO: Handle cases where a word may be longer than the width
+                first = it;
+                wspos = it;
+            }
+            else{
+                while(std::distance(first, it) >= width){
+                    it--;
+                }
+                wrap.push_back(std::string(first, it));
+                first = it;
+                it++;
+            }
             continue;
         }
         else if(isspace(*it)){
@@ -52,16 +72,19 @@ int posInWord(std::string::iterator it){
 }
 
 void Editor::wrap(int row){
-    auto txtit = std::begin(text);
+    auto txtit = std::begin(buffer);
     std::advance(txtit, row);
-    std::string tail = collapse(txtit, std::end(text));
-    text.erase(txtit, std::end(text));
-    flow(text, tail, fieldwidth);
+    //from the current row to the end of the buffer, add each row to a single string.
+    std::string tail = collapse(txtit, std::end(buffer));
+    //remove all rows from the current to the end
+    buffer.erase(txtit, std::end(buffer));
+    //reflow the buffer in tail, and put it back in the buffer.
+    flow(buffer, tail, fieldwidth);
 }
 
 void Editor::insert(char c){
     int row = EFFROW;
-    std::string& curline = text[row];
+    std::string& curline = buffer[row];
     if(curx - margin > curline.length()) { return; }
     auto inspos = std::begin(curline);
     std::advance(inspos, curx - margin);
@@ -80,6 +103,7 @@ void Editor::insert(char c){
             move_down();
         }
     }
+    edited = true;
 }
 
 int firstWordLen(std::string in){
@@ -94,24 +118,25 @@ int firstWordLen(std::string in){
 
 void Editor::remove(){
     int row = EFFROW;
-    auto txtit = std::begin(text);
+    auto txtit = std::begin(buffer);
     std::advance(txtit, row);
-    std::string& curline  = text[row];
+    std::string& curline  = buffer[row];
     if(curx - margin > curline.length()) { return; }
     auto rmpos = std::begin(curline);
     std::advance(rmpos, curx - margin);
     if(rmpos != std::end(curline)){
         curline.erase(rmpos);
     }
-    if(curline == "" && text.size() > 1){
-        text.erase(txtit);
+    if(curline == "" && buffer.size() > 1){
+        buffer.erase(txtit);
     }
     wrap(row);
+    edited = true;
     update();
 }
 
 std::string Editor::toString(){
-    return collapse(std::begin(text), std::end(text));
+    return collapse(std::begin(buffer), std::end(buffer));
 }
 
 //-------------------------------------------------------------------
@@ -126,7 +151,7 @@ Editor::Editor(){
     wmove(edwin, 1, 1);
     getyx(edwin, cury, curx);
     getmaxyx(edwin, fieldheight, fieldwidth);
-    text.push_back("");
+    buffer.push_back("");
     init();
 }
 
@@ -139,7 +164,7 @@ Editor::Editor(std::string in){
     getyx(edwin, cury, curx);
     getmaxyx(edwin, fieldheight, fieldwidth);
     init();
-    flow(text, in, fieldwidth);
+    flow(buffer, in, fieldwidth);
 }
 
 Editor::Editor(WINDOW* w){
@@ -149,7 +174,7 @@ Editor::Editor(WINDOW* w){
     getyx(edwin, cury, curx);
     getmaxyx(edwin, fieldheight, fieldwidth);
     init();
-    text.push_back("");
+    buffer.push_back("");
 }
 
 Editor::Editor(WINDOW* w, std::string in){
@@ -159,10 +184,11 @@ Editor::Editor(WINDOW* w, std::string in){
     getyx(edwin, cury, curx);
     getmaxyx(edwin, fieldheight, fieldwidth);
     init();
-    flow(text, in, fieldwidth);
+    flow(buffer, in, fieldwidth);
 }
 
 void Editor::init(){
+    edited = false;
     mode = NORMAL;
     scroll = 0;
     margin = 1;
@@ -173,7 +199,7 @@ void Editor::init(){
 }
 
 Editor::~Editor(){
-    //if(created) delwin(edwin);
+    if(created) delwin(edwin);
 }
 
 void Editor::listen(){
@@ -181,7 +207,10 @@ void Editor::listen(){
     while((c = getch()) != KEY_F(1)){
 		process(c);
 	}
-	//delwin(edwin);
+}
+
+bool Editor::has_changed(){
+    return edited;
 }
 
 //if the last char in the string is a newline, replace it with a space.
@@ -209,9 +238,9 @@ void Editor::update(){
     int tempx = margin;
     int tempy = margin;
     
-    for(int i = 0; i + scroll < text.size() && i < fieldheight; i++){
+    for(int i = 0; i + scroll < buffer.size() && i < fieldheight; i++){
         wmove(edwin, i + margin, margin);
-        waddstr(edwin, rmnl(text[i + scroll]));
+        waddstr(edwin, rmnl(buffer[i + scroll]));
     }
 
     if(mode == INSERT){
@@ -229,7 +258,7 @@ void Editor::update(){
 
     wmove(edwin, cury, curx);
     wrefresh(edwin);
-    //refresh();F
+    //refresh();
 }
 
 bool Editor::move_home(){
@@ -239,8 +268,8 @@ bool Editor::move_home(){
 }
 
 bool Editor::move_end(){
-    int nladj = text[EFFROW].back() == '\n' ? 1 : 0;  //Adjustment if there is a newline char.  we do not want to be able to insert after a newline
-    curx = text[EFFROW].length() + margin - nladj;
+    int nladj = buffer[EFFROW].back() == '\n' ? 1 : 0;  //Adjustment if there is a newline char.  we do not want to be able to insert after a newline
+    curx = buffer[EFFROW].length() + margin - nladj;
     wmove(edwin, cury, curx);
     return true;
 }
@@ -257,7 +286,7 @@ bool Editor::move_up(){
             update();
         }
     }
-    int len = text[EFFROW].length();
+    int len = buffer[EFFROW].length();
     
     if(len >= 0 && curx - margin > len){
         move_end();
@@ -270,12 +299,12 @@ bool Editor::move_up(){
 bool Editor::move_down(){
     cury++;
     bool res = true;
-    if(text.size() > fieldheight && cury > fieldheight){
+    if(buffer.size() > fieldheight && cury > fieldheight){
         cury = fieldheight;
-        if(fieldheight + scroll == text.size()){
+        if(fieldheight + scroll == buffer.size()){
             cury--;
         }
-        if(fieldheight + scroll <= text.size()){
+        if(fieldheight + scroll <= buffer.size()){
             scroll++;
         }
         
@@ -283,12 +312,12 @@ bool Editor::move_down(){
         update();
         return true;
     }
-    if(EFFROW >= text.size()){
+    if(EFFROW >= buffer.size()){
         res = false;
         cury--;
     }
     
-    int len = text[EFFROW].length();
+    int len = buffer[EFFROW].length();
     
     if(len >= 0 && curx > len){
         move_end();
@@ -311,37 +340,38 @@ bool Editor::move_left(){
 }
 
 bool Editor::move_right(){
-    curx++;
-    if(curx <= text[EFFROW].length() + margin){
-        if(text[EFFROW][curx - margin] == '\n'){
-            if(move_down()){
-                return move_home();
-            }
+    if(curx - margin <= buffer[EFFROW].length() && buffer[EFFROW][curx - margin] == '\n'){
+        if(move_down()){
+            return move_home();
         }
-        
+        else{
+            return false;
+        }
+    }
+    curx++;
+    if(curx <= buffer[EFFROW].length() + margin){
         wmove(edwin, cury, curx);
         return true;
     }
     else if(move_down()){
-        move_home();
-        return true;
+        return move_home();
     }
     return false;
 }
 
-int Editor::process(int c){
+void Editor::process(int c){
     getyx(edwin, cury, curx);
     int insertType = -1;
     if(mode == NORMAL && c == 'i'){
         mode = INSERT;
         update();
-        return 0;
+        return;
     }
     //if ESC is pressed, go into normal mode.
     if(c == 27){
         mode = NORMAL;
         update();
-        return 0;
+        return;
     }
 
     switch (c) 
@@ -364,6 +394,14 @@ int Editor::process(int c){
         case KEY_END:
             move_end();
             break;
+        case '\t':
+            if(mode == INSERT){
+                insert(' ');
+                while((curx - margin) % 4 != 0){
+                    insert(' ');
+                }
+            }
+            break;
         case KEY_ENTER:
         case 10:
         case 13:
@@ -373,14 +411,16 @@ int Editor::process(int c){
             }
             break;
         case KEY_BACKSPACE:
-            if(move_left()){
+            if(move_left() && mode == INSERT){
                remove();
                update();
             }
             break; 
         case KEY_DC:
-            remove();
-            update();
+            if(mode == INSERT){
+                remove();
+                update();
+            }      
             break;
         default:
             if(mode == INSERT){
@@ -390,15 +430,6 @@ int Editor::process(int c){
             }
     }
 
-    //box(edwin, 0, 0);
-    //if(curx > data->getlinelen(cury)){
-    //    curx = data->getlinelen(cury) + 1;
-    //}
-
     wmove(edwin, cury, curx);
-    refresh();
     wrefresh(edwin);
-
-    return ED_INS; 
 }
-

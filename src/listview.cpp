@@ -1,12 +1,9 @@
 #include "listview.hpp"
-
+#include "editor.hpp"
+//#include "sqlite_modern_cpp.h"
 #include <ncurses.h>
 
-ListView::ListView(){
-
-}
-
-ListView::ListView(WINDOW* win, std::vector<std::string> l){
+ListView::ListView(WINDOW* win, std::vector<fruit> l){
     curs_set(0); //invisible cursor
     lwin = win;
     getmaxyx(lwin, fieldheight, fieldwidth);
@@ -31,7 +28,7 @@ void ListView::init(){
 }
 
 void ListView::update(){
-     wmove(lwin, 0, 0);
+    wmove(lwin, 0, 0);
     wclrtobot(lwin);
     
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
@@ -52,12 +49,12 @@ void ListView::update(){
         if(i + scroll == selection){
             wattron(lwin, A_UNDERLINE);
             wattron(lwin, A_STANDOUT);
-            waddstr(lwin, text[i + scroll].c_str());
+            waddstr(lwin, text[i + scroll].name.c_str());
             wattroff(lwin, A_UNDERLINE);
             wattroff(lwin, A_STANDOUT);
         }
         else{
-            waddstr(lwin, text[i + scroll].c_str());
+            waddstr(lwin, text[i + scroll].name.c_str());
         }
     }
     box(lwin, 0, 0);
@@ -75,18 +72,26 @@ void ListView::listen(){
 int ListView::process(int c){
     switch(c){
         case KEY_UP:
-            selection--;
+            selection = selection > 0 ? selection - 1 :  text.size() - 1;
             break;
         case KEY_DOWN:
-            selection++;
+            selection = (selection + 1) % text.size();
             break;
         case 10:
         case 13:
         case KEY_ENTER:
-            std::string s = "YOU HAVE SELECTED: " + text[selection];
-            move(1,1);
-            clrtoeol();
-            addstr(s.c_str());
+            curs_set(1);
+            Editor e(text[selection].desc);
+            e.update();
+            e.listen();
+            if(e.has_changed()){
+                text[selection].desc = e.toString();
+                //*savefile << "UPDATE fruits SET description = ? WHERE name = ?;"
+                //    << text[selection].desc << text[selection].name; 
+            }
+            curs_set(0);
+            clear();
+            refresh();
             break;
     }
     update();

@@ -7,21 +7,34 @@
 #include <iostream>
 #include <ncurses.h>
 
+#define ESCDELAY 10
+
 int main(int argc, char* argv[]){
     try{
-        //std::string thermo;        
-        //sqlite::database db("test.db");
-        //db << "SELECT * FROM wew WHERE ROWID=1" >> thermo;
+        std::string thermo;        
+        sqlite::database db("fruit.db");
+        std::vector<fruit> myList;
+        fruit temp;
+        db << "SELECT name,description FROM fruits"
+            >> [&](std::string name, std::string desc){
+                temp.name = name;
+                temp.desc = desc;
+                myList.push_back(temp);
+            };
         start_curses();        
         int h,w;
         getmaxyx(stdscr, h, w);
-        WINDOW * win = newwin(h/2, w/2, h/4, w/4);
-        
-        std::vector<std::string> myList = {"Apples", "Bananas", "Carrots", "Durians", "Eggplants", "Frankenberries", "Goldberries"};
+        WINDOW * win = newwin(5, 15, 1, 1);
         ListView l(win, myList);
         l.update();
+        //refresh();
+        //wrefresh(win);
         l.listen();
         wrefresh(win);
+        delwin(win);
+        //Editor ed(thermo);
+        //ed.update();
+        //ed.listen();
         end_curses();
         //std::cout << ed.toString();
     }

@@ -1,43 +1,41 @@
 #pragma once
 
-#include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
 #define NORMAL 0
 #define INSERT 1
-#define ED_MOV 2
-#define ED_INS 3
-#define ED_DEL 4
+#define CHANGE 2
 
-class Buffer;
+//we can't include <ncurses> here since the macros clash with some
+//of the functions in std::algorithm.
 typedef struct _win_st WINDOW;
 
 class Editor{
     public:
-        //void scroll(int);
         Editor();
         Editor(WINDOW*);
         Editor(WINDOW*, std::string);
         Editor(std::string);
-        std::string toString();
-        int process(int);
-        bool move_up();
+        std::string toString(); //returns the text buffer as a single string.
+        void process(int);   //interpret keyboard input
+        bool move_up();     //Cursor movement functions
         bool move_down();
         bool move_left();
         bool move_right();
         bool move_home();
         bool move_end();
-        void update();
-        void init();
-        void listen();
-        void insert(char);
-        void remove();
-        void wrap(int);
+        bool has_changed(); //True if buffer has been edited
+        void update();      //Refresh the window, etc.
+        void init();        //Helper for the constructors
+        void listen();      //wait for input
+        void insert(char);  //insert into the text buffer
+        void remove();      //delete char under the cursor
+        void wrap(int row); //greedy word wrap algorithm
         ~Editor();
     private:
         bool created;
+        bool edited;
         int margin;
         int mode;
         int fieldheight;
@@ -45,6 +43,6 @@ class Editor{
         int scroll;
         int curx;
         int cury;
-        std::vector<std::string> text;
+        std::vector<std::string> buffer;
         WINDOW* edwin;
 };

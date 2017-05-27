@@ -48,11 +48,12 @@ CREATE TABLE 'inventory' (
     item TEXT NOT NULL,
     weight REAL,
     quantity INTEGER,
-    cost INTEGER
+    cost INTEGER,
+    description TEXT
 );
 
 CREATE TABLE 'transactions' (
-    amount INTEGER NOT NULL,
+    cost INTEGER NOT NULL,
     quantity INTEGER,    --For buying/selling multiple items i.e. 3 quivers of arrows
     perPack INTEGER,     --i.e. 15 arrows to the quiver
     description TEXT

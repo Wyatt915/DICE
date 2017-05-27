@@ -1,5 +1,7 @@
 #pragma once
 
+//#include "sqlite_modern_cpp.h"
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -7,12 +9,18 @@
 
 typedef struct _win_st WINDOW;
 
+struct fruit{
+    std::string name;
+    std::string desc;
+};
+
+//namespace sqlite {class database;}
+
 class ListView{
     public:
         //void scroll(int);
-        ListView();
         ListView(WINDOW*);
-        ListView(WINDOW*, std::vector<std::string>);
+        ListView(WINDOW*, std::vector<fruit>);
         int numlines();
         int process(int);
         bool move_up();
@@ -25,6 +33,7 @@ class ListView{
         void wrap(int);
         ~ListView();
     private:
+        //sqlite::database* savefile;
         bool created;
         int margin;
         int mode;
@@ -34,6 +43,6 @@ class ListView{
         int curx;
         int cury;
         int selection;
-        std::vector<std::string> text;
+        std::vector<fruit> text;
         WINDOW* lwin;
 };
