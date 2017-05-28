@@ -8,7 +8,7 @@ oooooooooo.    o8o
 o888bood8P'   o888o `Y8bod8P' `Y8bod8P' 
 ```
                                         
-#DICE - DICE Improves your Campaign Experience.
+# DICE - DICE Improves your Campaign Experience.
 
 DICE allows RPG players and game masters to quickly and easily manage their stats, inventory, quests, and currency. DICE aims to require minimal interaction to edit game data, allowing users to focus more on playing their game rather than tedious bookkeeping.
 
