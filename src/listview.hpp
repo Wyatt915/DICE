@@ -14,13 +14,13 @@ struct fruit{
     std::string desc;
 };
 
-//namespace sqlite {class database;}
+namespace sqlite {class database;}
 
 class ListView{
     public:
         //void scroll(int);
         ListView(WINDOW*);
-        ListView(WINDOW*, std::vector<fruit>);
+        ListView(sqlite::database*, WINDOW*, std::vector<fruit>);
         int numlines();
         int process(int);
         bool move_up();
@@ -33,7 +33,7 @@ class ListView{
         void wrap(int);
         ~ListView();
     private:
-        //sqlite::database* savefile;
+        sqlite::database* savefile;
         bool created;
         int margin;
         int mode;
@@ -43,6 +43,6 @@ class ListView{
         int curx;
         int cury;
         int selection;
-        std::vector<fruit> text;
+        std::vector<fruit> listitems;
         WINDOW* lwin;
 };

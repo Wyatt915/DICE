@@ -1,13 +1,12 @@
 #include "editor.hpp"
 #include "curseswrapper.hpp"
 #include "listview.hpp"
-#include "sqlite_modern_cpp.h"
+#include <sqlite_modern_cpp.h>
 #include <string>
 #include <vector>
 #include <iostream>
 #include <ncurses.h>
 
-#define ESCDELAY 10
 
 int main(int argc, char* argv[]){
     try{
@@ -21,11 +20,12 @@ int main(int argc, char* argv[]){
                 temp.desc = desc;
                 myList.push_back(temp);
             };
-        start_curses();        
+        start_curses();
+        set_escdelay(10);
         int h,w;
         getmaxyx(stdscr, h, w);
-        WINDOW * win = newwin(5, 15, 1, 1);
-        ListView l(win, myList);
+        WINDOW * win = newwin(15, 15, 1, 1);
+        ListView l(& db, win, myList);
         l.update();
         //refresh();
         //wrefresh(win);

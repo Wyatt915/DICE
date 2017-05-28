@@ -1,12 +1,12 @@
 CC=gcc
 CXX=g++
 CXXFLAGS=-c -std=c++14
-LNFLAGS=-lpthread -ldl -lncurses
+LNFLAGS=-lpanel -lncurses -lsqlite3
 
 all: dice
 
-dice: main.o editor.o curseswrapper.o listview.o sqlite3.o
-	$(CXX) main.o editor.o curseswrapper.o sqlite3.o listview.o -o dice $(LNFLAGS)
+dice: main.o editor.o curseswrapper.o listview.o 
+	$(CXX) main.o editor.o curseswrapper.o listview.o -o dice $(LNFLAGS)
 
 main.o: main.cpp
 	$(CXX) $(CXXFLAGS) main.cpp

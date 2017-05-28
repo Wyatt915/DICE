@@ -10,6 +10,7 @@
 //we can't include <ncurses> here since the macros clash with some
 //of the functions in std::algorithm.
 typedef struct _win_st WINDOW;
+typedef struct panel PANEL;
 
 class Editor{
     public:
@@ -32,6 +33,11 @@ class Editor{
         void insert(char);  //insert into the text buffer
         void remove();      //delete char under the cursor
         void wrap(int row); //greedy word wrap algorithm
+        void clear();       //clears the buffer
+        void fill(std::string); //fill the buffer with the supplied string
+        void show();
+        void hide();
+        void setTitle(std::string);
         ~Editor();
     private:
         bool created;
@@ -44,5 +50,7 @@ class Editor{
         int curx;
         int cury;
         std::vector<std::string> buffer;
+        std::string title;
         WINDOW* edwin;
+        PANEL* edpanel;        
 };

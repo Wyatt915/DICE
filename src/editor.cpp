@@ -139,9 +139,21 @@ std::string Editor::toString(){
     return collapse(std::begin(buffer), std::end(buffer));
 }
 
+void Editor::clear(){
+    buffer.clear();
+    buffer.push_back("");
+}
+
+void Editor::fill(std::string text){
+    buffer.clear();
+    flow(buffer, text, fieldwidth);
+    update();
+}
+
 //-------------------------------------------------------------------
 
 #include <ncurses.h>
+#include <panel.h>
 
 Editor::Editor(){
     int h, w;
@@ -188,6 +200,8 @@ Editor::Editor(WINDOW* w, std::string in){
 }
 
 void Editor::init(){
+    title = "";
+    edpanel = new_panel(edwin);
     edited = false;
     mode = NORMAL;
     scroll = 0;
@@ -199,11 +213,26 @@ void Editor::init(){
 }
 
 Editor::~Editor(){
+    del_panel(edpanel);
     if(created) delwin(edwin);
+}
+
+void Editor::show(){
+    show_panel(edpanel);
+    update_panels();
+}
+
+void Editor::hide(){
+    hide_panel(edpanel);
+}
+
+void Editor::setTitle(std::string in){
+    title = in;
 }
 
 void Editor::listen(){
 	int c;
+    doupdate();
     while((c = getch()) != KEY_F(1)){
 		process(c);
 	}
@@ -246,12 +275,24 @@ void Editor::update(){
     if(mode == INSERT){
         wattron(edwin, COLOR_PAIR(2));    
         box(edwin, 0, 0);
+        if(title.length() > 0){
+            wmove(edwin, 0, (fieldwidth - title.length() + 2)/2);
+            waddch(edwin, '[');
+            waddstr(edwin, title.c_str());
+            waddch(edwin, ']');
+        }
         mvwaddstr(edwin, fieldheight + 2*margin - 1, fieldwidth/4, "[INSERT]");
         wattroff(edwin, COLOR_PAIR(2));     
     }
     if(mode == NORMAL){
         //wattron(edwin, COLOR_PAIR(2));    
         box(edwin, 0, 0);
+        if(title.length() > 0){
+            wmove(edwin, 0, (fieldwidth - title.length() + 2)/2);
+            waddch(edwin, '[');
+            waddstr(edwin, title.c_str());
+            waddch(edwin, ']');
+        }
         mvwaddstr(edwin, fieldheight + 2*margin - 1, fieldwidth/4, "[NORMAL]");
         //wattroff(edwin, COLOR_PAIR(2));     
     }

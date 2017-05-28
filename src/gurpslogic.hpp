@@ -50,7 +50,5 @@ namespace gurps{
         std::vector<adv> advantages;
         std::vector<dis> disadvantages;
         disp(int s, int d, int i, int h);
-    };
-    
-   
+    }; 
 }
