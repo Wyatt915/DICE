@@ -5,8 +5,8 @@ LNFLAGS=-lpanel -lncurses -lsqlite3
 
 all: dice
 
-dice: main.o editor.o curseswrapper.o listview.o 
-	$(CXX) main.o editor.o curseswrapper.o listview.o -o dice $(LNFLAGS)
+dice: main.o editor.o curseswrapper.o listview.o roller.o
+	$(CXX) main.o editor.o curseswrapper.o listview.o roller.o -o dice $(LNFLAGS)
 
 main.o: main.cpp
 	$(CXX) $(CXXFLAGS) main.cpp
@@ -19,6 +19,9 @@ editor.o: editor.cpp editor.hpp
 
 curseswrapper.o: curseswrapper.cpp curseswrapper.hpp
 	$(CXX) $(CXXFLAGS) curseswrapper.cpp
+
+roller.o: roller.cpp roller.hpp
+	$(CXX) $(CXXFLAGS) roller.cpp
 
 sqlite3.o:
 	$(CC) -Wall -Werror -Wno-unused sqlite3.c -c

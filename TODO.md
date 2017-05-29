@@ -1,14 +1,14 @@
 INTERFACE
 =========
-- [ ] Text Editor
+- [x] Text Editor
     - [ ] Wrap words longer than width of window
     - [x] Fix bug allowing insertion of characters after the newline at the end of a line
 
 - [ ] List View
     - [ ] Variable columns/column names
-    - [ ] underline currently selected item
-    - [ ] scroll
-    - [ ] open a viewer / text editor when [enter] is pressed
+    - [x] underline currently selected item
+    - [x] scroll
+    - [x] open a viewer / text editor when [enter] is pressed
 
 - [ ] Tables
     - [ ] Random Hit Location
