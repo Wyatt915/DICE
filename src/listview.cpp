@@ -29,23 +29,23 @@ void ListView::init(){
 }
 
 void ListView::update(){
+    //if(scroll < 0) scroll = 0;
+    move(0, 20);
+    std::string debug = "Scroll: " + std::to_string(scroll);
+    addstr(debug.c_str());
+    move(1, 20);
+    debug = "Selection: " + std::to_string(selection);
+    addstr(debug.c_str());
     wmove(lwin, 0, 0);
     wclrtobot(lwin);
     
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
-    /**
-    wattron(lwin, COLOR_PAIR(1));   
-    for(int i = 0; i < fieldheight; i++){
-        wmove(lwin, i + margin, margin);
-        waddch(lwin, '~');
-    }
-    wattroff(lwin, COLOR_PAIR(1));
-    */    
+    
     int tempx = margin;
     int tempy = margin;
     
-    for(int i = scroll; i + scroll < listitems.size() && i < fieldheight; i++){
+    for(int i = 0; i + scroll < listitems.size() && i - scroll < fieldheight; i++){
         wmove(lwin, i + margin, margin);
         if(i + scroll == selection){
             wattron(lwin, A_UNDERLINE);
@@ -71,16 +71,51 @@ void ListView::listen(){
     }
 }
 
+bool ListView::move_up(){
+    if(selection == 0){
+        selection = listitems.size() - 1;
+        scroll = listitems.size() - fieldheight;
+        if(scroll < 0) scroll = 0;
+        return true;
+    }
+    else if(selection == scroll){
+        selection--;
+        scroll--;
+        return true;
+    }
+    else{
+        selection--;
+        return true;
+    }
+}
+
+bool ListView::move_down(){
+    if(selection == listitems.size() - 1){
+        scroll = 0;
+        selection = 0;
+        return true;
+    }
+    else if(selection == scroll + fieldheight - 1){
+        scroll++;
+        selection++;
+        return true;
+    }
+    else{
+        selection++;
+        return true;
+    }
+}
+
 int ListView::process(int c){
     Editor e;
     e.hide();
     fruit newfruit;
     switch(c){
         case KEY_UP:
-            selection = selection > 0 ? selection - 1 :  listitems.size() - 1;
+            move_up();
             break;
         case KEY_DOWN:
-            selection = (selection + 1) % listitems.size();
+            move_down();
             break;
         case 'a':
             curs_set(1);

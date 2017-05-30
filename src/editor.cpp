@@ -441,6 +441,7 @@ void Editor::process(int c){
                 while((curx - margin) % 4 != 0){
                     insert(' ');
                 }
+                update();
             }
             break;
         case KEY_ENTER:

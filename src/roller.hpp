@@ -14,6 +14,12 @@ class Roller{
         Roller(WINDOW*);
         Roller(WINDOW*, std::string);
         Roller(std::string);
+        bool move_up();
+        bool move_down();
+        bool move_left();
+        bool move_right();
+        bool move_end();
+        bool move_home();
         void process(int);  //interpret keyboard input
         void update();      //Refresh the window, etc.
         void init();        //Helper for the constructors
@@ -34,8 +40,12 @@ class Roller{
         int fieldwidth;
         int curx;
         int cury;
-        std::vector<std::string> buffer;
+        int exprpos;
+        std::vector<std::string> history;
+        int histpos;
         std::string title;
+        std::string expr;
+        std::string prevexpr;
         WINDOW* rollwin;
-        PANEL* rollpanel;        
+        PANEL* rollpanel;
 };
