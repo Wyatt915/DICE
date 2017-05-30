@@ -17,12 +17,12 @@ The controls for DICE are meant to require as few keystrokes as possible.
 
 ## On the main screen
 
-Key       Action
--------   ------------------------------------------------------
-`space`   Roll default dice. From here, more dice can be rolled.
-`tab`     cycle through windows
-`+`       increment a value
-`-`       decrement a value
+Key      | Action
+-------  | ------------------------------------------------------
+`space`  | Roll default dice. From here, more dice can be rolled.
+`tab`    | cycle through windows
+`+`      | increment a value
+`-`      | decrement a value
 
 
 # File Format
