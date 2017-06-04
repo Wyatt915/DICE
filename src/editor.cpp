@@ -139,10 +139,6 @@ std::string Editor::toString(){
     return collapse(std::begin(buffer), std::end(buffer));
 }
 
-void Editor::clear(){
-    buffer.clear();
-    buffer.push_back("");
-}
 
 void Editor::fill(std::string text){
     buffer.clear();
@@ -208,8 +204,8 @@ void Editor::init(){
     margin = 1;
     fieldwidth -= 2*margin;
     fieldheight -= 2*margin;
+    doupdate();
     update();
-    refresh();
 }
 
 Editor::~Editor(){
@@ -224,6 +220,13 @@ void Editor::show(){
 
 void Editor::hide(){
     hide_panel(edpanel);
+    update_panels();
+}
+
+void Editor::clear(){
+    buffer.clear();
+    buffer.push_back("");
+    wmove(edwin, 0, 0);
 }
 
 void Editor::setTitle(std::string in){
@@ -233,7 +236,7 @@ void Editor::setTitle(std::string in){
 void Editor::listen(){
 	int c;
     doupdate();
-    while((c = getch()) != KEY_F(1)){
+    while(!((c = getch()) == 'q' && mode == NORMAL)){
 		process(c);
 	}
 }
@@ -285,7 +288,6 @@ void Editor::update(){
         wattroff(edwin, COLOR_PAIR(2));     
     }
     if(mode == NORMAL){
-        //wattron(edwin, COLOR_PAIR(2));    
         box(edwin, 0, 0);
         if(title.length() > 0){
             wmove(edwin, 0, (fieldwidth - title.length() + 2)/2);
@@ -294,7 +296,6 @@ void Editor::update(){
             waddch(edwin, ']');
         }
         mvwaddstr(edwin, fieldheight + 2*margin - 1, fieldwidth/4, "[NORMAL]");
-        //wattroff(edwin, COLOR_PAIR(2));     
     }
 
     wmove(edwin, cury, curx);

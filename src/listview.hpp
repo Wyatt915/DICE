@@ -1,13 +1,10 @@
 #pragma once
 
-//#include "sqlite_modern_cpp.h"
-
-#include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
 typedef struct _win_st WINDOW;
+typedef struct panel PANEL;
 
 struct fruit{
     std::string name;
@@ -25,7 +22,12 @@ class ListView{
         int process(int);
         bool move_up();
         bool move_down();
+        void give_focus();
+        void revoke_focus();
         void update();
+        void addItem();
+        void removeItem();
+        void editItem();
         void init();
         void listen();
         void insert(char);
@@ -33,8 +35,8 @@ class ListView{
         void wrap(int);
         ~ListView();
     private:
-        sqlite::database* savefile;
         bool created;
+        bool has_focus;
         int margin;
         int mode;
         int fieldheight;
@@ -45,4 +47,6 @@ class ListView{
         int selection;
         std::vector<fruit> listitems;
         WINDOW* lwin;
+        PANEL* lpanel;
+        sqlite::database* savefile;
 };

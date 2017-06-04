@@ -155,7 +155,7 @@ Roller::Roller(){
     getmaxyx(rollwin, fieldheight, fieldwidth);
     wmove(rollwin, fieldheight - 1, 1);
     doupdate();
-    show_panel(rollpanel);
+    hide_panel(rollpanel);
     refresh();
 }
 
@@ -179,7 +179,7 @@ void Roller::roll(std::string command){
         update();
     }
     else{
-        refresh();
+        wrefresh(rollwin);
         std::vector<int> res = results(tokens);
         int total = 0;
         for(int i : res){
@@ -211,7 +211,16 @@ Roller::~Roller(){
     delwin(rollwin);
 }
 
+void Roller::show(){
+    show_panel(rollpanel);
+}
+
+void Roller::hide(){
+    hide_panel(rollpanel);
+}
+
 void Roller::update(){
+    //curs_set(1);
     wmove(rollwin, fieldheight - 2, 1);
     wclrtoeol(rollwin);
     waddch(rollwin, ':');
@@ -224,7 +233,7 @@ void Roller::update(){
 
 void Roller::listen(){
     int c;
-    while((c = getch()) != 27){
+    while((c = getch()) != 'q'){
         process(c);
     }
 }
@@ -300,6 +309,7 @@ void Roller::process(int c){
         case KEY_RIGHT:
             move_right();
             break;
+        case ' ':
         case 10:
         case 13:
         case KEY_ENTER:

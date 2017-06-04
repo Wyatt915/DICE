@@ -1,10 +1,14 @@
+*.bak
 *.db
 *.dice
 *.o
 *.out
 *.rpg
 *.swp
+
 dice
+
 resources/
 sqlite/
 src/hdr/
+src/wip/
