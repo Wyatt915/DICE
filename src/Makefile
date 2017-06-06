@@ -1,6 +1,6 @@
 CC=gcc
 CXX=g++
-CXXFLAGS=-c -std=c++14
+CXXFLAGS=-c -g -std=c++14
 LNFLAGS=-lpanel -lncurses -lsqlite3
 
 EXEC = dice

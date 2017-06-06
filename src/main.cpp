@@ -2,6 +2,7 @@
 #include "curseswrapper.hpp"
 #include "listview.hpp"
 #include "roller.hpp"
+#include "parse.hpp"
 
 #include <sqlite_modern_cpp.h>
 #include <string>

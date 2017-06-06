@@ -1,5 +1,7 @@
 #pragma once
 
+#include "parse.hpp"
+
 #include <string>
 #include <vector>
 
@@ -7,6 +9,7 @@
 //of the functions in std::algorithm.
 typedef struct _win_st WINDOW;
 typedef struct panel PANEL;
+
 
 class Roller{
     public:
@@ -30,6 +33,8 @@ class Roller{
         void hide();
         void setTitle(std::string);
         void roll(std::string);
+        //void roll(SyntaxTree);
+        void display(int);
         ~Roller();
     private:
         bool created;
@@ -45,7 +50,7 @@ class Roller{
         int histpos;
         std::string title;
         std::string expr;
-        std::string prevexpr;
+        SyntaxTree prevexpr;
         WINDOW* rollwin;
         PANEL* rollpanel;
 };
