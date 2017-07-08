@@ -5,6 +5,8 @@
 *.out
 *.rpg
 *.swp
+*.sql
+
 
 dice
 
@@ -12,3 +14,5 @@ resources/
 sqlite/
 src/hdr/
 src/wip/
+src/crap/
+src/extensions/

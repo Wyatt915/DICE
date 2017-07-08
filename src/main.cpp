@@ -1,6 +1,6 @@
 #include "editor.hpp"
 #include "curseswrapper.hpp"
-#include "listview.hpp"
+#include "list_skills.hpp"
 #include "roller.hpp"
 #include "parse.hpp"
 
@@ -22,23 +22,28 @@ void rollertest(){
 
 void lvtest(){
     try{
-        sqlite::database db("fruit.db");
-        std::vector<fruit> myList;
-        fruit temp;
-        db << "SELECT name,description FROM fruits"
-            >> [&](std::string name, std::string desc){
+        sqlite::database db("skills.db");
+        std::vector<skill> myList;
+        skill temp;
+        db << "SELECT name,base,diff,pnts FROM skills"
+            >> [&](std::string name, std::string base, std::string diff, int points){
                 temp.name = name;
-                temp.desc = desc;
+                temp.base = base;
+                temp.pnts = points;
+                if(diff == "EASY"){ temp.diff = easy; }
+                if(diff == "AVERAGE"){ temp.diff = average; }
+                if(diff == "HARD"){ temp.diff = hard; }
+                if(diff == "VERY HARD"){ temp.diff = veryhard; }
                 myList.push_back(temp);
             };
 
         WINDOW * win1 = newwin(SCREENH, SCREENW/3, 0, 0);
         WINDOW * win2 = newwin(SCREENH, SCREENW/3, 0, SCREENW/3 + 1);
         WINDOW * win3 = newwin(SCREENH, SCREENW/3, 0, (2 * SCREENW/3) + 1);
-        ListView l1(& db, win1, myList);
-        ListView l2(& db, win2, myList);
-        ListView l3(& db, win3, myList);
-        ListView views[3] = {l1, l2, l3};
+        ListSkills l1(& db, win1, myList);
+        ListSkills l2(& db, win2, myList);
+        ListSkills l3(& db, win3, myList);
+        ListSkills views[3] = {l1, l2, l3};
         int c;
         int count = 0;
         doupdate();

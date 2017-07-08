@@ -6,18 +6,25 @@
 typedef struct _win_st WINDOW;
 typedef struct panel PANEL;
 
-struct fruit{
-    std::string name;
-    std::string desc;
+enum gurps_diff { easy, average, hard, veryhard };
+
+struct skill{
+    std::string name;   //Name of the skill
+    std::string base;   //base attribute or base skill
+    gurps_diff  diff;   //difficulty
+    std::string desc;   //description
+    int pnts;           //points invested
 };
+
+std::string find_rel_lvl(skill s);
 
 namespace sqlite {class database;}
 
-class ListView{
+class ListSkills{
     public:
         //void scroll(int);
-        ListView(WINDOW*);
-        ListView(sqlite::database*, WINDOW*, std::vector<fruit>);
+        ListSkills(WINDOW*);
+        ListSkills(sqlite::database*, WINDOW*, std::vector<skill>);
         int numlines();
         int process(int);
         bool move_up();
@@ -28,12 +35,13 @@ class ListView{
         void addItem();
         void removeItem();
         void editItem();
+        void investPoints(int);
         void init();
         void listen();
         void insert(char);
         void remove();
         void wrap(int);
-        ~ListView();
+        ~ListSkills();
     private:
         bool created;
         bool has_focus;
@@ -45,7 +53,7 @@ class ListView{
         int curx;
         int cury;
         int selection;
-        std::vector<fruit> listitems;
+        std::vector<skill> listitems;
         WINDOW* lwin;
         PANEL* lpanel;
         sqlite::database* savefile;

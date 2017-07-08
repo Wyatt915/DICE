@@ -1,10 +1,46 @@
-#include "listview.hpp"
+#include "list_skills.hpp"
 #include "editor.hpp"
 #include <sqlite_modern_cpp.h>
 #include <ncurses.h>
 #include <panel.h>
 
-ListView::ListView(sqlite::database* db, WINDOW* win, std::vector<fruit> l){
+std::string find_rel_lvl(skill s){
+    int level;
+    int points = s.pnts;
+    //gives the level with 1 point invested
+    switch (s.diff){
+        case easy:
+            level = 0;
+            break;
+        case average:
+            level = -1;
+            break;
+        case hard:
+            level = -2;
+            break;
+        case veryhard:
+            level = -3;
+            break;
+    }
+    
+    if(points == 2 || points == 3){
+        level += 1;
+    }
+    else if (points >= 4){
+        level += 1 + points/4;
+    }
+    bool negative = level < 0;
+    std::string out;
+    if(negative){
+        out = s.base + std::to_string(level);
+    }
+    else{
+        out = s.base+ "+" + std::to_string(level);
+    }
+    return out;
+}
+
+ListSkills::ListSkills(sqlite::database* db, WINDOW* win, std::vector<skill> l){
     savefile = db;
     curs_set(0); //invisible cursor
     lwin = win;
@@ -15,11 +51,11 @@ ListView::ListView(sqlite::database* db, WINDOW* win, std::vector<fruit> l){
     init();
 }
 
-ListView::~ListView(){
+ListSkills::~ListSkills(){
     curs_set(1);
 }
 
-void ListView::init(){
+void ListSkills::init(){
     scroll = 0;
     selection = 0;
     has_focus = false;
@@ -31,17 +67,17 @@ void ListView::init(){
     update();
 }
 
-void ListView::give_focus(){
+void ListSkills::give_focus(){
     has_focus = true;
     update();
 }
 
-void ListView::revoke_focus(){
+void ListSkills::revoke_focus(){
     has_focus = false;
     update();
 }
 
-void ListView::update(){
+void ListSkills::update(){
     //if(scroll < 0) scroll = 0;
     wmove(lwin, 0, 0);
     wclrtobot(lwin);
@@ -52,6 +88,8 @@ void ListView::update(){
     int tempx = margin;
     int tempy = margin;
     
+    
+
     for(int i = 0; i + scroll < listitems.size() && i - scroll < fieldheight; i++){
         wmove(lwin, i + margin, margin);
         if(i + scroll == selection && has_focus){
@@ -60,10 +98,15 @@ void ListView::update(){
             waddstr(lwin, listitems[i + scroll].name.c_str());
             wattroff(lwin, A_UNDERLINE);
             wattroff(lwin, A_STANDOUT);
+
         }
         else{
             waddstr(lwin, listitems[i + scroll].name.c_str());
         }
+        mvwaddstr(lwin, i + margin, margin + 20, find_rel_lvl(listitems[i+scroll]).c_str());
+        std::string invested = "[" + std::to_string(listitems[i + scroll].pnts) + "]";
+        mvwaddstr(lwin, i + margin, margin + 28, invested.c_str());
+        wmove(lwin, i + margin, margin);
     }
     if(has_focus){ wattron(lwin, COLOR_PAIR(2)); }
     box(lwin, 0, 0);
@@ -72,7 +115,7 @@ void ListView::update(){
     wrefresh(lwin);
 }
 
-void ListView::listen(){
+void ListSkills::listen(){
     int c;
     while((c = getch()) != KEY_F(1)){
         process(c);
@@ -80,7 +123,7 @@ void ListView::listen(){
     }
 }
 
-bool ListView::move_up(){
+bool ListSkills::move_up(){
     if(selection == 0){
         selection = listitems.size() - 1;
         scroll = listitems.size() - fieldheight;
@@ -98,7 +141,7 @@ bool ListView::move_up(){
     }
 }
 
-bool ListView::move_down(){
+bool ListSkills::move_down(){
     if(selection == listitems.size() - 1){
         scroll = 0;
         selection = 0;
@@ -115,32 +158,32 @@ bool ListView::move_down(){
     }
 }
 
-void ListView::addItem(){
+void ListSkills::addItem(){
     Editor e;
-    fruit newfruit;
+    skill newskill;
     curs_set(1);
     e.setTitle("New Item");
     e.show();
     e.listen();
-    newfruit.name = e.toString();
-    if(newfruit.name.length() > 0){
+    newskill.name = e.toString();
+    if(newskill.name.length() > 0){
         e.clear();
         e.setTitle("Enter Description");
         e.listen();
-        newfruit.desc = e.toString();
-        listitems.push_back(newfruit);
-        *savefile << "INSERT INTO fruits(name, description) VALUES (?,?);"
-            << newfruit.name << newfruit.desc;
+        newskill.desc = e.toString();
+        listitems.push_back(newskill);
+        *savefile << "INSERT INTO skills(name, description) VALUES (?,?);"
+            << newskill.name << newskill.desc;
     }
     e.hide();
     curs_set(0);
 }
 
-void ListView::removeItem(){
+void ListSkills::removeItem(){
 
 }
 
-void ListView::editItem(){
+void ListSkills::editItem(){
     Editor e;
     curs_set(1);
     e.setTitle(listitems[selection].name);
@@ -150,14 +193,20 @@ void ListView::editItem(){
     e.listen();
     if(e.has_changed()){
         listitems[selection].desc = e.toString();
-        *savefile << "UPDATE fruits SET description = ? WHERE name = ?;"
+        *savefile << "UPDATE skills SET description = ? WHERE name = ?;"
             << listitems[selection].desc << listitems[selection].name; 
     }
     e.hide();
     curs_set(0);
 }
 
-int ListView::process(int c){
+void ListSkills::investPoints(int howmany){
+    listitems[selection].pnts += howmany;
+    //TODO debit/credit to unspent points
+    update();
+}
+
+int ListSkills::process(int c){
     switch(c){
         case KEY_UP:
             move_up();
@@ -171,6 +220,13 @@ int ListView::process(int c){
         case 'x':
         case KEY_DC:
             removeItem();
+            break;
+        case '=':
+        case '+':
+            investPoints(1);
+            break;
+        case '-':
+            investPoints(-1);
             break;
         case 10:
         case 13:

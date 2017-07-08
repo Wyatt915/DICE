@@ -176,7 +176,13 @@ int SyntaxTree::evaluate(){
 
 int SyntaxTree::evaluate(Node* n){
     if(n->left == nullptr && n->right == nullptr){
-        return n->value;
+        //an operand will have two null children
+        if(!n->op){
+            return n->value;
+        }
+        else{
+            throw std::runtime_error("Invalid Expression. Please try again.");
+        }
     }
     char c = n->value;
     int lval, rval;
