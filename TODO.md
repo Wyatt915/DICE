@@ -5,7 +5,7 @@ INTERFACE
     - [x] Fix bug allowing insertion of characters after the newline at the end of a line
 
 - [ ] List View
-    - [ ] Variable columns/column names
+    - [x] Implement a listview base class from which an item list, skill list, advantage list, etc may inherit features.
     - [x] underline currently selected item
     - [x] scroll
     - [x] open a viewer / text editor when [enter] is pressed
@@ -21,5 +21,6 @@ INTERFACE
 BACKEND / LOGIC
 ===============
 - [ ] GURPS
+    - [x] Skill levels
 - [ ] D&D
 - [ ] Pathfinder

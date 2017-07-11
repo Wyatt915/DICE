@@ -1,14 +1,14 @@
 #pragma once
 
+#include "listview.hpp"
+
 #include <string>
 #include <vector>
-
-typedef struct _win_st WINDOW;
-typedef struct panel PANEL;
 
 enum gurps_diff { easy, average, hard, veryhard };
 
 struct skill{
+    unsigned long id;   //database ID of the skill
     std::string name;   //Name of the skill
     std::string base;   //base attribute or base skill
     gurps_diff  diff;   //difficulty
@@ -18,43 +18,30 @@ struct skill{
 
 std::string find_rel_lvl(skill s);
 
-namespace sqlite {class database;}
-
-class ListSkills{
+class ListSkills : public ListView{
     public:
         //void scroll(int);
         ListSkills(WINDOW*);
-        ListSkills(sqlite::database*, WINDOW*, std::vector<skill>);
+        ListSkills(sqlite::database*, WINDOW*);
         int numlines();
         int process(int);
-        bool move_up();
-        bool move_down();
-        void give_focus();
-        void revoke_focus();
-        void update();
         void addItem();
         void removeItem();
         void editItem();
         void investPoints(int);
-        void init();
-        void listen();
         void insert(char);
         void remove();
         void wrap(int);
+        void show();
+        void hide();
+        virtual void update();
+        virtual void setFooter(std::string);
+        virtual void setHeader(std::string);
+        virtual void setTitle(std::string);
+        std::string createHeader();
         ~ListSkills();
     private:
         bool created;
-        bool has_focus;
-        int margin;
-        int mode;
-        int fieldheight;
-        int fieldwidth;
-        int scroll;
-        int curx;
-        int cury;
-        int selection;
+        int tabstops[4];
         std::vector<skill> listitems;
-        WINDOW* lwin;
-        PANEL* lpanel;
-        sqlite::database* savefile;
 };

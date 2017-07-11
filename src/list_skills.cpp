@@ -1,8 +1,31 @@
 #include "list_skills.hpp"
 #include "editor.hpp"
+
 #include <sqlite_modern_cpp.h>
 #include <ncurses.h>
 #include <panel.h>
+#include <ctype.h>
+
+void read_db(sqlite::database* db, std::vector<skill>& list){
+    try{    
+        skill temp;
+        *db << "SELECT rowid,name,base,diff,pnts FROM skills"
+            >> [&](unsigned long id, std::string name, std::string base, std::string diff, int points){
+                temp.id = id;
+                temp.name = name;
+                temp.base = base;
+                temp.pnts = points;
+                if(toupper(diff[0]) == 'E'){ temp.diff = easy; }
+                if(toupper(diff[0]) == 'A'){ temp.diff = average; }
+                if(toupper(diff[0]) == 'H'){ temp.diff = hard; }
+                if(toupper(diff[0]) == 'V'){ temp.diff = veryhard; }
+                list.push_back(temp);
+        };
+    }
+    catch(std::exception& e){
+        std::cout << e.what();
+    }
+}
 
 std::string find_rel_lvl(skill s){
     int level;
@@ -40,58 +63,87 @@ std::string find_rel_lvl(skill s){
     return out;
 }
 
-ListSkills::ListSkills(sqlite::database* db, WINDOW* win, std::vector<skill> l){
-    savefile = db;
+ListSkills::ListSkills(sqlite::database* db, WINDOW* win):ListView(db, win){
     curs_set(0); //invisible cursor
-    lwin = win;
-    getmaxyx(lwin, fieldheight, fieldwidth);
-    wmove(lwin, 1, 1);
-    getyx(lwin, cury, curx);
-    listitems = l;
-    init();
+    
+    read_db(db, listitems);
+    num_items = listitems.size();
+
+    setTitle("Skills");
+    std::string head = createHeader();
+    setHeader(head);
+    has_footer = false;
+
+    fieldwidth -= margin[MRGT] + margin[MLFT];
+    fieldheight-= margin[MTOP] + margin[MBOT];
+    update_panels();
+    doupdate();
+    update();
+    wrefresh(lwin);
 }
 
 ListSkills::~ListSkills(){
     curs_set(1);
 }
 
-void ListSkills::init(){
-    scroll = 0;
-    selection = 0;
-    has_focus = false;
-    margin = 1;
-    fieldwidth -= 2*margin;
-    fieldheight -= 2*margin;
-    lpanel = new_panel(lwin);
-    doupdate();
-    update();
+void ListSkills::show(){
+    show_panel(lpanel);
 }
 
-void ListSkills::give_focus(){
-    has_focus = true;
-    update();
+void ListSkills::hide(){
+    hide_panel(lpanel);
 }
 
-void ListSkills::revoke_focus(){
-    has_focus = false;
-    update();
+void ListSkills::setFooter(std::string f){
+    footer = f;
+    has_footer = true;
+    margin[MBOT] = 2;
+}
+
+void ListSkills::setHeader(std::string h){
+    header = h;
+    has_header = true;
+    margin[MTOP] = 2;
+}
+
+void ListSkills::setTitle(std::string t){
+    title = t;
+}
+
+std::string ListSkills::createHeader(){
+    std::string h = "";
+    std::string data[4] = {"Name", "Level", "Rel. Level", "Points"};
+    //TODO dynamically calculate tabstops, based on the longest word in each field
+    tabstops[0] = margin[MLFT];
+    tabstops[1] = margin[MLFT] + 16;
+    tabstops[2] = margin[MLFT] + 24;
+    tabstops[3] = margin[MLFT] + 32;
+    for(int i = 0; i < 3; i++){
+        h += data[i];
+        while(h.length() - margin[MLFT] < tabstops[i + 1]){
+            h += " ";
+        }
+    }
+    h += data[3];
+    return h;
 }
 
 void ListSkills::update(){
-    //if(scroll < 0) scroll = 0;
     wmove(lwin, 0, 0);
     wclrtobot(lwin);
     
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
     
-    int tempx = margin;
-    int tempy = margin;
+    //int tempx = margin;
+    //int tempy = margin;
     
-    
+    if(has_header){
+        mvwaddstr(lwin, margin[MLFT], 1, header.c_str());
+    }
 
-    for(int i = 0; i + scroll < listitems.size() && i - scroll < fieldheight; i++){
-        wmove(lwin, i + margin, margin);
+    for(int i = 0; i + scroll < num_items && i - scroll < fieldheight; i++){
+        wmove(lwin, i + margin[MTOP], margin[MLFT]);
         if(i + scroll == selection && has_focus){
             wattron(lwin, A_UNDERLINE);
             wattron(lwin, A_STANDOUT);
@@ -103,10 +155,10 @@ void ListSkills::update(){
         else{
             waddstr(lwin, listitems[i + scroll].name.c_str());
         }
-        mvwaddstr(lwin, i + margin, margin + 20, find_rel_lvl(listitems[i+scroll]).c_str());
+        mvwaddstr(lwin, i + margin[MTOP], tabstops[1], find_rel_lvl(listitems[i+scroll]).c_str());
         std::string invested = "[" + std::to_string(listitems[i + scroll].pnts) + "]";
-        mvwaddstr(lwin, i + margin, margin + 28, invested.c_str());
-        wmove(lwin, i + margin, margin);
+        mvwaddstr(lwin, i + margin[MTOP], tabstops[3], invested.c_str());
+        wmove(lwin, cury, curx);
     }
     if(has_focus){ wattron(lwin, COLOR_PAIR(2)); }
     box(lwin, 0, 0);
@@ -115,48 +167,13 @@ void ListSkills::update(){
     wrefresh(lwin);
 }
 
-void ListSkills::listen(){
-    int c;
-    while((c = getch()) != KEY_F(1)){
-        process(c);
-        update();
-    }
-}
-
-bool ListSkills::move_up(){
-    if(selection == 0){
-        selection = listitems.size() - 1;
-        scroll = listitems.size() - fieldheight;
-        if(scroll < 0) scroll = 0;
-        return true;
-    }
-    else if(selection == scroll){
-        selection--;
-        scroll--;
-        return true;
-    }
-    else{
-        selection--;
-        return true;
-    }
-}
-
-bool ListSkills::move_down(){
-    if(selection == listitems.size() - 1){
-        scroll = 0;
-        selection = 0;
-        return true;
-    }
-    else if(selection == scroll + fieldheight - 1){
-        scroll++;
-        selection++;
-        return true;
-    }
-    else{
-        selection++;
-        return true;
-    }
-}
+//void ListSkills::listen(){
+//    int c;
+//    while((c = getch()) != KEY_F(1)){
+//        process(c);
+//        update();
+//    }
+//}
 
 void ListSkills::addItem(){
     Editor e;
@@ -234,4 +251,5 @@ int ListSkills::process(int c){
             editItem();
             break;
     }
+    //update();
 }
