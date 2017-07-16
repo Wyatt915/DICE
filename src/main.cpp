@@ -2,11 +2,12 @@
 #include "list_skills.hpp"
 #include "parse.hpp"
 #include "roller.hpp"
+#include "sqlite3.h"
 
 #include <iostream>
 #include <ncurses.h>
 #include <panel.h>
-#include "sqlite3.h"
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -26,17 +27,20 @@ void lvtest(){
         if(rc != SQLITE_OK){
             throw std::runtime_error("Error: Could not open database.");
         }
+
         WinPos dims;
         dims.x = 0;
         dims.y = 0;
         dims.w = SCREENW/3;
         dims.h = SCREENH;
+        
         ListSkills l1(db, dims);
         l1.show();
         l1.give_focus();
+        l1.update();
+        
         Roller r;
         r.hide();
-        l1.update();
         refresh();
         update_panels();
         doupdate();
@@ -103,3 +107,15 @@ int main(int argc, char* argv[]){
     endwin();
     return 0;
 }
+
+//////////////////////////////////////////////////////
+//                                                  //
+//      oooooooooo.    o8o                          //
+//      `888'   `Y8b   `"'                          //
+//       888      888 oooo   .ooooo.   .ooooo.      //
+//       888      888 `888  d88' `"Y8 d88' `88b     //
+//       888      888  888  888       888ooo888     //
+//       888     d88'  888  888   .o8 888    .o     //
+//      o888bood8P'   o888o `Y8bod8P' `Y8bod8P'     //
+//                                                  //
+//////////////////////////////////////////////////////

@@ -1,14 +1,69 @@
 #include "parse.hpp"
 #include "utils.hpp"
 
-#include <exception>
 #include <stdlib.h>
 #include <stdexcept>
+#include <ctype.h>
 
-std::string operators = "dDxX+-*/";
+std::string operators = "dDxX+-*/@";
 
 std::vector<std::string> reserved_words = { "dx", "iq", "ht", "st", "hp", "will", "per", "fp" };
 
+//-------------------------------------------[TokenStack]-------------------------------------------
+
+TokenStack::TokenStack():numTokens(0), top(-1){
+    data = new Token[1024];
+}
+
+TokenStack::TokenStack(const TokenStack& other){
+    numTokens = other.numTokens;
+    top = other.top;
+    data = new Token[1024];
+    std::copy(other.data, other.data + numTokens, data);
+}
+
+TokenStack& TokenStack::operator=(const TokenStack& other){
+    if(data){ delete data; }
+    numTokens = other.numTokens;
+    top = other.top;
+    data = new Token[1024];
+    std::copy(other.data, other.data + numTokens, data);
+    return *this;
+}
+
+TokenStack::~TokenStack(){
+    delete data;
+}
+
+int TokenStack::size(){
+    return numTokens;
+}
+
+bool TokenStack::is_empty(){
+    return numTokens <= 0;
+}
+
+bool TokenStack::not_empty(){
+    return numTokens > 0;
+}
+
+void TokenStack::push(Token t){
+    top++;
+    data[top] = t;
+    numTokens++;
+}
+
+Token TokenStack::pop(){
+    if(numTokens == 0){
+        throw std::runtime_error("Error: attempt to pop empty stack");
+    }
+    Token out = data[top];
+    top--;
+    numTokens--;
+    return out;
+}
+
+//------------------------------------------[Tokenization]------------------------------------------
 
 void expand_reserved(std::string& s){
     tolower(s);
@@ -26,71 +81,75 @@ void expand_reserved(std::string& s){
             }
         }
         f++;
+        l = f;
     }
 }
 
-std::vector<std::string> tokenize(std::string s){
+std::vector<Token> tokenize(std::string s){
+    expand_reserved(s);
     auto first = s.begin();
     auto last = s.begin();
-    std::vector<std::string> out;
-    while(last != s.end()){
-        if(is_in_list(*last, operators)){
-            out.push_back(std::string(first, last));
-            out.push_back(std::string(1, *last)); //fill a string with 1 char
-            last++;
+    std::vector<Token> out;
+    enum tokentype{ token_null, token_op, token_num} prevToken;
+    prevToken = token_null;
+    while(first != s.end()){
+        if(isdigit(*first)){
+            last = first;
+            do{
+                last++;
+            } while(last != s.end() && isdigit(*last));
+
+            out.push_back(Token(false, std::stoi(std::string(first, last))));
             first = last;
+            prevToken = token_num;
         }
-        else{
-            last++;
+        //Handle the case of negative numbers. A '-' char indicates a
+        //negative number if it comes at the beginning of the string,
+        //or if it follows a previous operator.
+        if(*first == '-' && prevToken != token_num){
+            first = last;
+            do{
+                last++;
+            } while(last != s.end() && isdigit(*last));
+            out.push_back(Token(false, std::stoi(std::string(first, last))));
+            first = last;
+            prevToken = token_num;
+        }
+
+        if(is_in_list(*first, operators)){
+            out.push_back(Token(true, *first));
+            first++;
+            last = first;
+            prevToken = token_op;
         }
     }
-    out.push_back(std::string(first, last));
     return out;
 }
 
-//class TokenStack{
-//    public:
-//        TokenStack();
-//        void push(Token);
-//        Token pop();
-//        int size();
-//        bool is_empty();
-//    private:
-//        Token* data;
-//        int numTokens;
-//};
 
-std::vector<Token> infix_to_postfix(std::vector<std::string> list){
-    std::vector<Token> thestack;
-    std::vector<Token> opstack;
-    Token temp;
+TokenStack infix_to_postfix(std::vector<Token> list){
+    TokenStack postfix;
+    TokenStack opstack;
     try{
-        for(std::string s : list){
-            if(is_in_list(s[0], operators)){
+        for(Token t : list){
+            if(t.op){
                 if(opstack.size() > 0){
-                    thestack.push_back(opstack.back());
-                    opstack.pop_back();
+                    postfix.push(opstack.pop());
                 }
-                temp.op = true;
-                temp.value = s[0];
-                opstack.push_back(temp);
+                opstack.push(t);
             }
-            else if(s.length() > 0){
-                temp.op = false;
-                temp.value = std::stoi(s);
-                thestack.push_back(temp);
+            else{
+                postfix.push(t);
             }
         }
     }
     catch(...){
-        std::runtime_error p("Invalid expression. Please try again.");
-        throw p;
+        throw std::runtime_error("Invalid expression. Please try again.");
     }
-    while(opstack.size() > 0){
-        thestack.push_back(opstack.back());
-        opstack.pop_back();
+    while(opstack.not_empty()){
+        postfix.push(opstack.pop());
     }
-    return thestack;
+    return postfix;
 }
 
 //void printTokens(std::vector<Token> in){
@@ -124,7 +183,7 @@ Node* copyTree(Node* n){
     return clone;
 }
 
-//----------------------------------[SyntaxTree Member Functions]----------------------------------
+//-------------------------------[SyntaxTree Constructors/Destructor]-------------------------------
 
 SyntaxTree::SyntaxTree(std::string e):expr(e){
     root = new Node;
@@ -157,6 +216,12 @@ SyntaxTree& SyntaxTree::operator=(const SyntaxTree& other){
     return *this;
 }
 
+SyntaxTree::~SyntaxTree(){
+    freeTree(root);
+}
+
+//----------------------------------[SyntaxTree Member Functions]----------------------------------
+
 void SyntaxTree::setExpr(std::string e){
     expr = e;
     freeTree(root);
@@ -172,15 +237,9 @@ void SyntaxTree::setExpr(std::string e){
     isBuilt = true;
 }
 
-SyntaxTree::~SyntaxTree(){
-    freeTree(root);
-}
-
-
 void SyntaxTree::build(Node* n){
     if(exprstack.size() == 0) return;
-    Token t = exprstack.back();
-    exprstack.pop_back();
+    Token t = exprstack.pop();
     n->op = t.op;
     n->value = t.value;
     if(n->op){
@@ -249,6 +308,14 @@ std::string SyntaxTree::str(){
     return expr;
 }
 
-//bool SyntaxTree::operator==(const SyntaxTree& rhs){ return expr == rhs.expr; }
-//bool SyntaxTree::operator!=(const SyntaxTree& rhs){ return !(expr == rhs.expr); }
-
+//////////////////////////////////////////////////////
+//                                                  //
+//      oooooooooo.    o8o                          //
+//      `888'   `Y8b   `"'                          //
+//       888      888 oooo   .ooooo.   .ooooo.      //
+//       888      888 `888  d88' `"Y8 d88' `88b     //
+//       888      888  888  888       888ooo888     //
+//       888     d88'  888  888   .o8 888    .o     //
+//      o888bood8P'   o888o `Y8bod8P' `Y8bod8P'     //
+//                                                  //
+//////////////////////////////////////////////////////
