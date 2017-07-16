@@ -1,13 +1,13 @@
-#include "listview.hpp"
 #include "editor.hpp"
+#include "listview.hpp"
+#include "sqlite3.h"
 
 #include <algorithm>
-#include <sqlite_modern_cpp.h>
 #include <ncurses.h>
 #include <panel.h>
 
 ListView::ListView(){
-    //curs_set(0); //invisible cursor
+    savefile = nullptr;
     scroll = 0;
     selection = 0;
     has_focus = false;
@@ -16,9 +16,9 @@ ListView::ListView(){
     cury = margin[MTOP];
 }
 
-ListView::ListView(sqlite::database* db, WINDOW* win){
+ListView::ListView(sqlite3* db, WinPos def){
     savefile = db;
-    lwin = win;
+    lwin = newwin(def.h, def.w, def.y, def.x);
     lpanel = new_panel(lwin);
     getmaxyx(lwin, fieldheight, fieldwidth);
     std::fill(margin, margin + 4, 1);
@@ -27,13 +27,13 @@ ListView::ListView(sqlite::database* db, WINDOW* win){
 }
 
 ListView::~ListView(){
+    //It is VERY IMPORTANT to delete the PANEL FIRST, and the WINDOW LAST.
     del_panel(lpanel);
-    curs_set(1);
+    delwin(lwin);
 }
 
 void ListView::give_focus(){
     has_focus = true;
-    curs_set(0);
 }
 
 void ListView::revoke_focus(){
@@ -56,7 +56,7 @@ bool ListView::move_up(){
         //if the length of the list does not exceed the fieldheight, do not scroll.
         if(scroll < 0){
             scroll = 0;
-            cury = num_items + margin[MTOP];
+            cury = num_items + margin[MTOP] - 1;
         }
         else{
             cury = margin[MTOP] + fieldheight;
@@ -95,3 +95,28 @@ bool ListView::move_down(){
     wmove(lwin, cury, curx);
     return true;
 }
+
+void ListView::setFooter(std::string f){
+    footer = f;
+    has_footer = true;
+    margin[MBOT] = 2;
+}
+
+void ListView::setHeader(std::string h){
+    header = h;
+    has_header = true;
+    margin[MTOP] = 2;
+}
+
+void ListView::setTitle(std::string t){
+    title = t;
+}
+
+void ListView::show(){
+    show_panel(lpanel);
+}
+
+void ListView::hide(){
+    hide_panel(lpanel);
+}
+

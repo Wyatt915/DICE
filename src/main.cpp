@@ -1,15 +1,14 @@
 #include "editor.hpp"
-#include "curseswrapper.hpp"
 #include "list_skills.hpp"
-#include "roller.hpp"
 #include "parse.hpp"
+#include "roller.hpp"
 
-#include <sqlite_modern_cpp.h>
-#include <string>
-#include <vector>
 #include <iostream>
 #include <ncurses.h>
 #include <panel.h>
+#include "sqlite3.h"
+#include <string>
+#include <vector>
 
 int SCREENH, SCREENW;
 
@@ -21,10 +20,18 @@ void rollertest(){
 }
 
 void lvtest(){
+    sqlite3* db;
     try{
-        sqlite::database db("skills.db");
-        WINDOW * win1 = newwin(SCREENH, SCREENW/3, 0, 0);
-        ListSkills l1(& db, win1);
+        int rc = sqlite3_open("skills.db", &db);
+        if(rc != SQLITE_OK){
+            throw std::runtime_error("Error: Could not open database.");
+        }
+        WinPos dims;
+        dims.x = 0;
+        dims.y = 0;
+        dims.w = SCREENW/3;
+        dims.h = SCREENH;
+        ListSkills l1(db, dims);
         l1.show();
         l1.give_focus();
         Roller r;
@@ -33,39 +40,66 @@ void lvtest(){
         refresh();
         update_panels();
         doupdate();
-        l1.update();
         int c;
         while((c = getch()) != 'q'){
             if(c == ' '){
-                curs_set(1);
+                l1.revoke_focus();
                 r.show();
                 r.roll("3d6");
                 r.update();
                 r.listen();
                 r.hide();
-                curs_set(0);
                 update_panels();
                 refresh();
             }
             else{
+                l1.give_focus();
                 l1.process(c);
             }
         }
-        delwin(win1);
+        endwin();
+        sqlite3_close(db);
     }
     catch(std::exception& e){
-        std::cout << e.what();
+        endwin();
+        sqlite3_close(db);
+        std::cout << e.what() << "\n";
+        getch();
+        throw e;
     }
+}
+
+void start_curses(){
+    initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);            
+    start_color();
+    if(can_change_color()){
+        init_color(COLOR_BLACK, 137, 173, 192);
+        init_color(COLOR_BLUE, 100, 300, 700);
+        init_color(COLOR_YELLOW, 941, 776, 454);
+    }   
+    else{
+        move(3,0);
+        addstr("Custom colors not supported on this terminal.");
+    } 
 }
 
 int main(int argc, char* argv[]){
     start_curses();
     set_escdelay(10);
     getmaxyx(stdscr, SCREENH, SCREENW);
-    
-    //rollertest();
-    lvtest();
-
-    end_curses();
+    bool ended = false;
+    try{
+        lvtest();
+    }
+    catch(std::exception& e){
+        ended = true;
+        endwin();
+        std::cout << e.what() << "\n";
+        return 1;
+    }
+    endwin();
     return 0;
 }

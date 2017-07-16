@@ -1,29 +1,44 @@
 #include "list_skills.hpp"
 #include "editor.hpp"
 
-#include <sqlite_modern_cpp.h>
 #include <ncurses.h>
 #include <panel.h>
 #include <ctype.h>
+#include "sqlite3.h"
+#include <sstream>
 
-void read_db(sqlite::database* db, std::vector<skill>& list){
-    try{    
-        skill temp;
-        *db << "SELECT rowid,name,base,diff,pnts FROM skills"
-            >> [&](unsigned long id, std::string name, std::string base, std::string diff, int points){
-                temp.id = id;
-                temp.name = name;
-                temp.base = base;
-                temp.pnts = points;
-                if(toupper(diff[0]) == 'E'){ temp.diff = easy; }
-                if(toupper(diff[0]) == 'A'){ temp.diff = average; }
-                if(toupper(diff[0]) == 'H'){ temp.diff = hard; }
-                if(toupper(diff[0]) == 'V'){ temp.diff = veryhard; }
-                list.push_back(temp);
-        };
-    }
-    catch(std::exception& e){
-        std::cout << e.what();
+gurps_diff str_to_enum(std::string in){
+    if(toupper(in[0]) == 'E'){ return easy; }
+    if(toupper(in[0]) == 'A'){ return average; }
+    if(toupper(in[0]) == 'H'){ return hard; }
+    if(toupper(in[0]) == 'V'){ return veryhard; }
+}
+
+static int populate(void* data, int argc, char** argv, char** azColName){
+    skill temp;
+    std::string diff;
+    std::stringstream(argv[0]) >> temp.id;
+    std::stringstream(argv[1]) >> temp.name;
+    std::stringstream(argv[2]) >> temp.base;
+    std::stringstream(argv[3]) >> diff;
+    std::stringstream(argv[4]) >> temp.pnts;
+    temp.diff = str_to_enum(diff);
+    std::vector<skill>* skills  = reinterpret_cast<std::vector<skill>*>(data);
+    skills->push_back(temp);
+    return 0;
+}
+    
+
+void read_db(sqlite3* db, std::vector<skill>& list){
+    skill temp;
+    const char* sql = "SELECT rowid,name,base,diff,pnts FROM skills";
+    char* zErrMsg = 0;
+    int rc = sqlite3_exec(db, sql, populate, (void*)&list, &zErrMsg);
+    if(rc != SQLITE_OK){
+        std::string errstr = "QLite error: ";
+        errstr += zErrMsg;
+        sqlite3_free(zErrMsg);
+        throw std::runtime_error(errstr);
     }
 }
 
@@ -63,10 +78,17 @@ std::string find_rel_lvl(skill s){
     return out;
 }
 
-ListSkills::ListSkills(sqlite::database* db, WINDOW* win):ListView(db, win){
+//-------------------------------------[Constructor/Destructor]-------------------------------------
+
+ListSkills::ListSkills(sqlite3* db, WinPos def):ListView(db, def){
     curs_set(0); //invisible cursor
-    
-    read_db(db, listitems);
+    try{
+        read_db(db, listitems);
+    }
+    catch(std::exception& e){
+        mvaddstr(0, 0, e.what());
+        throw e;
+    }
     num_items = listitems.size();
 
     setTitle("Skills");
@@ -76,6 +98,8 @@ ListSkills::ListSkills(sqlite::database* db, WINDOW* win):ListView(db, win){
 
     fieldwidth -= margin[MRGT] + margin[MLFT];
     fieldheight-= margin[MTOP] + margin[MBOT];
+    curx = margin[MLFT];
+    cury = margin[MTOP];
     update_panels();
     doupdate();
     update();
@@ -83,31 +107,7 @@ ListSkills::ListSkills(sqlite::database* db, WINDOW* win):ListView(db, win){
 }
 
 ListSkills::~ListSkills(){
-    curs_set(1);
-}
-
-void ListSkills::show(){
-    show_panel(lpanel);
-}
-
-void ListSkills::hide(){
-    hide_panel(lpanel);
-}
-
-void ListSkills::setFooter(std::string f){
-    footer = f;
-    has_footer = true;
-    margin[MBOT] = 2;
-}
-
-void ListSkills::setHeader(std::string h){
-    header = h;
-    has_header = true;
-    margin[MTOP] = 2;
-}
-
-void ListSkills::setTitle(std::string t){
-    title = t;
+    mvaddstr(6, 0, "Derived Destructor");
 }
 
 std::string ListSkills::createHeader(){
@@ -127,6 +127,8 @@ std::string ListSkills::createHeader(){
     h += data[3];
     return h;
 }
+
+//---------------------------------------[ncurses functions]---------------------------------------
 
 void ListSkills::update(){
     wmove(lwin, 0, 0);
@@ -155,9 +157,9 @@ void ListSkills::update(){
         else{
             waddstr(lwin, listitems[i + scroll].name.c_str());
         }
-        mvwaddstr(lwin, i + margin[MTOP], tabstops[1], find_rel_lvl(listitems[i+scroll]).c_str());
+        mvwaddstr(lwin, i + margin[MTOP], margin[MLFT] + tabstops[1] + 1, find_rel_lvl(listitems[i+scroll]).c_str());
         std::string invested = "[" + std::to_string(listitems[i + scroll].pnts) + "]";
-        mvwaddstr(lwin, i + margin[MTOP], tabstops[3], invested.c_str());
+        mvwaddstr(lwin, i + margin[MTOP], margin[MLFT] + tabstops[3] + 1, invested.c_str());
         wmove(lwin, cury, curx);
     }
     if(has_focus){ wattron(lwin, COLOR_PAIR(2)); }
@@ -167,18 +169,11 @@ void ListSkills::update(){
     wrefresh(lwin);
 }
 
-//void ListSkills::listen(){
-//    int c;
-//    while((c = getch()) != KEY_F(1)){
-//        process(c);
-//        update();
-//    }
-//}
+//----------------------------------------[Read/Write/Edit]----------------------------------------
 
 void ListSkills::addItem(){
     Editor e;
     skill newskill;
-    curs_set(1);
     e.setTitle("New Item");
     e.show();
     e.listen();
@@ -189,11 +184,10 @@ void ListSkills::addItem(){
         e.listen();
         newskill.desc = e.toString();
         listitems.push_back(newskill);
-        *savefile << "INSERT INTO skills(name, description) VALUES (?,?);"
-            << newskill.name << newskill.desc;
+        //savefile << "INSERT INTO skills(name, description) VALUES (?,?);"
+        //    << newskill.name << newskill.desc;
     }
     e.hide();
-    curs_set(0);
 }
 
 void ListSkills::removeItem(){
@@ -202,7 +196,6 @@ void ListSkills::removeItem(){
 
 void ListSkills::editItem(){
     Editor e;
-    curs_set(1);
     e.setTitle(listitems[selection].name);
     e.show();
     e.fill(listitems[selection].desc);
@@ -210,11 +203,10 @@ void ListSkills::editItem(){
     e.listen();
     if(e.has_changed()){
         listitems[selection].desc = e.toString();
-        *savefile << "UPDATE skills SET description = ? WHERE name = ?;"
-            << listitems[selection].desc << listitems[selection].name; 
+        //savefile << "UPDATE skills SET description = ? WHERE name = ?;"
+        //    << listitems[selection].desc << listitems[selection].name; 
     }
     e.hide();
-    curs_set(0);
 }
 
 void ListSkills::investPoints(int howmany){
@@ -251,5 +243,5 @@ int ListSkills::process(int c){
             editItem();
             break;
     }
-    //update();
+    update();
 }

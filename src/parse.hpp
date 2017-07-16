@@ -25,16 +25,16 @@ class SyntaxTree{
     public:    
         SyntaxTree(std::string e);
         SyntaxTree();
+        SyntaxTree(const SyntaxTree&);
         int evaluate();
         std::string str();
         void setExpr(std::string);
         bool operator==(const SyntaxTree& b){ return expr == b.expr; }
         bool operator!=(const SyntaxTree& b){ return expr != b.expr; }
-        //SyntaxTree& operator=(const SyntaxTree&);
+        SyntaxTree& operator=(const SyntaxTree&);
         ~SyntaxTree();
     private:
         Node* root;
-        void freeTree(Node*);
         std::string expr;
         bool isBuilt;
         std::vector<Token> exprstack;

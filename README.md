@@ -32,7 +32,5 @@ Do you already have character or game data saved in a spreadsheet? If you're any
 To build, you will need to have the following libraries installed:
 
 - ncurses (including the developer package)
-- sqlite3 (including the developer package)
-- [Amin Roosta's sqlite modern cpp](https://github.com/aminroosta/sqlite_modern_cpp).
 
-As of right now, it is convenient for me to have these libraries installed, as I use them for other projecs as well.  In the future, I plan to include all the sqlite-related code in the project files, leaving only the ncurses library for end users to install.
+DICE no longer requires any sqlite-related packages.

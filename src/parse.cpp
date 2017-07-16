@@ -1,33 +1,40 @@
 #include "parse.hpp"
+#include "utils.hpp"
 
 #include <exception>
 #include <stdlib.h>
 #include <stdexcept>
 
-std::string operators = "dDxX+-*";
+std::string operators = "dDxX+-*/";
 
-void tolower(std::string& s){
-    for(int i = 0; i < s.length(); i++){
-        if(s[i] >= 'A' && s[i] <= 'Z'){
-           s[i] = s[i] - 'A' + 'a';
+std::vector<std::string> reserved_words = { "dx", "iq", "ht", "st", "hp", "will", "per", "fp" };
+
+
+void expand_reserved(std::string& s){
+    tolower(s);
+    int rwlen = max_length_in_list(reserved_words);
+    auto f = std::begin(s); //first letter in reserved word
+    auto l = f;             //one after last letter in reserved word
+    while(f != std::end(s)){
+        for(int i = 0; i < rwlen && l != std::end(s); i++){
+            l++;
+            if (is_in_list(std::string(f, l), reserved_words)){
+                s.replace(f,l,"10");    //TODO: actually look up the relevant values
+                l--;
+                f = l;
+                break;
+            }
         }
+        f++;
     }
 }
-
-bool is_op(char c){
-    for(char o : operators){
-        if(c == o) return true;
-    }
-    return false;
-}
-
 
 std::vector<std::string> tokenize(std::string s){
     auto first = s.begin();
     auto last = s.begin();
     std::vector<std::string> out;
     while(last != s.end()){
-        if(is_op(*last)){
+        if(is_in_list(*last, operators)){
             out.push_back(std::string(first, last));
             out.push_back(std::string(1, *last)); //fill a string with 1 char
             last++;
@@ -41,13 +48,25 @@ std::vector<std::string> tokenize(std::string s){
     return out;
 }
 
+//class TokenStack{
+//    public:
+//        TokenStack();
+//        void push(Token);
+//        Token pop();
+//        int size();
+//        bool is_empty();
+//    private:
+//        Token* data;
+//        int numTokens;
+//};
+
 std::vector<Token> infix_to_postfix(std::vector<std::string> list){
     std::vector<Token> thestack;
     std::vector<Token> opstack;
     Token temp;
     try{
         for(std::string s : list){
-            if(is_op(s[0])){
+            if(is_in_list(s[0], operators)){
                 if(opstack.size() > 0){
                     thestack.push_back(opstack.back());
                     opstack.pop_back();
@@ -86,10 +105,28 @@ std::vector<Token> infix_to_postfix(std::vector<std::string> list){
 //    std::cout << '\n';
 //}
 
-//----------------------------------------------
+//----------------------------------------[Tree operations]----------------------------------------
+
+void freeTree(Node* n){
+    if(n == nullptr) return;
+    freeTree(n->left);
+    freeTree(n->right);
+    delete n;
+}
+
+Node* copyTree(Node* n){
+    if(n == nullptr) return nullptr;
+    Node* clone = new Node;
+    clone->op = n->op;
+    clone->value = n->value;
+    clone->left = copyTree(n->left);
+    clone->right = copyTree(n->right);
+    return clone;
+}
+
+//----------------------------------[SyntaxTree Member Functions]----------------------------------
 
 SyntaxTree::SyntaxTree(std::string e):expr(e){
-    //srand(time(NULL));
     root = new Node;
     tolower(expr);
     try{
@@ -104,8 +141,20 @@ SyntaxTree::SyntaxTree(std::string e):expr(e){
 
 SyntaxTree::SyntaxTree(){
     root = nullptr;
-    //srand(time(NULL));
     isBuilt = false;
+}
+
+SyntaxTree::SyntaxTree(const SyntaxTree& other){
+    root = copyTree(other.root);
+    isBuilt = other.isBuilt;
+    expr = other.expr;
+}
+
+SyntaxTree& SyntaxTree::operator=(const SyntaxTree& other){
+    root = copyTree(other.root);
+    isBuilt = other.isBuilt;
+    expr = other.expr;
+    return *this;
 }
 
 void SyntaxTree::setExpr(std::string e){
@@ -127,22 +176,6 @@ SyntaxTree::~SyntaxTree(){
     freeTree(root);
 }
 
-void SyntaxTree::freeTree(Node* n){
-    if(n == nullptr) return;
-    freeTree(n->left);
-    freeTree(n->right);
-    delete n;
-}
-
-Node* copyTree(Node* n){
-    if(n == nullptr) return nullptr;
-    Node* clone = new Node;
-    clone->op = n->op;
-    clone->value = n->value;
-    clone->left = copyTree(n->left);
-    clone->right = copyTree(n->right);
-    return clone;
-}
 
 void SyntaxTree::build(Node* n){
     if(exprstack.size() == 0) return;
@@ -184,17 +217,20 @@ int SyntaxTree::evaluate(Node* n){
             throw std::runtime_error("Invalid Expression. Please try again.");
         }
     }
+    
     char c = n->value;
     int lval, rval;
+
     if(c == 'd' && n->left == nullptr){
         lval = 1; //this way, users dont have to specify rolling "1d6", instead they can just roll "d6"
     }
     else{
         lval = evaluate(n->left);
     }
+    
     rval = evaluate(n->right);
-    int foo = 0;
-    switch(c){
+    
+    switch (c){
         case 'd':
             return roll(lval, rval);
         case '+':
@@ -204,6 +240,8 @@ int SyntaxTree::evaluate(Node* n){
         case 'x':
         case '*':
             return lval * rval;
+        case '/':
+            return lval / rval;
     }
 }
 

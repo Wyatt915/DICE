@@ -1,24 +1,24 @@
 CC=gcc
 CXX=g++
-CXXFLAGS=-c -g -std=c++14
-LNFLAGS=-lpanel -lncurses -lsqlite3
+CXXFLAGS=-c -g -std=c++14 -O0
+LNFLAGS=-lpanel -lncurses
 
 EXEC = dice
 SOURCES = $(wildcard *.cpp)
-OBJECTS = $(SOURCES:.cpp=.o)
+OBJECTS = $(SOURCES:.cpp=.o) sqlite3.o
 
 # Main target
 $(EXEC): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LNFLAGS) -o $(EXEC)
  
+sqlite3.o: sqlite3.c
+	$(CC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -Wall -Werror -Wno-unused sqlite3.c -c
+
 # To obtain object files
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $< -o $@
- 
+
 # To remove generated files
 clean:
 	rm -f $(EXEC) $(OBJECTS)
-
-#sqlite3.o:
-#	$(CC) -Wall -Werror -Wno-unused sqlite3.c -c
 

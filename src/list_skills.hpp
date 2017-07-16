@@ -22,7 +22,7 @@ class ListSkills : public ListView{
     public:
         //void scroll(int);
         ListSkills(WINDOW*);
-        ListSkills(sqlite::database*, WINDOW*);
+        ListSkills(sqlite3*, WinPos);
         int numlines();
         int process(int);
         void addItem();
@@ -32,12 +32,12 @@ class ListSkills : public ListView{
         void insert(char);
         void remove();
         void wrap(int);
-        void show();
-        void hide();
+        //void show();
+        //void hide();
         virtual void update();
-        virtual void setFooter(std::string);
-        virtual void setHeader(std::string);
-        virtual void setTitle(std::string);
+        //virtual void setFooter(std::string);
+        //virtual void setHeader(std::string);
+        //virtual void setTitle(std::string);
         std::string createHeader();
         ~ListSkills();
     private:
