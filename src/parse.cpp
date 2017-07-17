@@ -1,3 +1,9 @@
+/*
+ *  DICE source file
+ *  parse.cpp
+ *  
+ */
+
 #include "parse.hpp"
 #include "utils.hpp"
 
@@ -5,9 +11,29 @@
 #include <stdexcept>
 #include <ctype.h>
 
-std::string operators = "dDxX+-*/@";
+std::string operators = "dDxX+-*/@()";
 
 std::vector<std::string> reserved_words = { "dx", "iq", "ht", "st", "hp", "will", "per", "fp" };
+
+//---------------------------------------------[Token]---------------------------------------------
+
+int precedence(Token t){
+    char c = t.value;
+    switch(c){
+        case '+':
+        case '-':
+            return 0;
+        case 'x':
+        case 'X':
+        case '*':
+        case '/':
+            return 1;
+        case 'd':
+        case 'D':
+        case '@':
+            return 2;
+    }
+}
 
 //-------------------------------------------[TokenStack]-------------------------------------------
 
@@ -47,6 +73,10 @@ bool TokenStack::not_empty(){
     return numTokens > 0;
 }
 
+Token TokenStack::peek(){
+    return data[top];
+}
+
 void TokenStack::push(Token t){
     top++;
     data[top] = t;
@@ -54,7 +84,7 @@ void TokenStack::push(Token t){
 }
 
 Token TokenStack::pop(){
-    if(numTokens == 0){
+    if(numTokens <= 0){
         throw std::runtime_error("Error: attempt to pop empty stack");
     }
     Token out = data[top];
@@ -87,17 +117,17 @@ void expand_reserved(std::string& s){
 
 std::vector<Token> tokenize(std::string s){
     expand_reserved(s);
-    auto first = s.begin();
-    auto last = s.begin();
+    auto first = std::begin(s);
+    auto last = std::begin(s);
     std::vector<Token> out;
     enum tokentype{ token_null, token_op, token_num} prevToken;
     prevToken = token_null;
-    while(first != s.end()){
+    while(first != std::end(s)){
         if(isdigit(*first)){
             last = first;
             do{
                 last++;
-            } while(last != s.end() && isdigit(*last));
+            } while(last != std::end(s) && isdigit(*last));
 
             out.push_back(Token(false, std::stoi(std::string(first, last))));
             first = last;
@@ -110,7 +140,7 @@ std::vector<Token> tokenize(std::string s){
             first = last;
             do{
                 last++;
-            } while(last != s.end() && isdigit(*last));
+            } while(last != std::end(s) && isdigit(*last));
             out.push_back(Token(false, std::stoi(std::string(first, last))));
             first = last;
             prevToken = token_num;
@@ -131,38 +161,77 @@ TokenStack infix_to_postfix(std::vector<Token> list){
     TokenStack postfix;
     TokenStack opstack;
     try{
-        for(Token t : list){
-            if(t.op){
-                if(opstack.size() > 0){
+        int i = 0;
+        while(i < list.size()){
+            Token t = list[i];
+            //Case 1: Push operands as they arrive. This is the only case
+            //involving operands.
+            if(!t.op){
+                postfix.push(t);
+                i++;
+            }
+            //Case 2: If the stack is empty or contains a left parenthesis on
+            //top, push the incoming operator onto the stack.
+            else if (opstack.is_empty() || opstack.peek().value == '('){
+                opstack.push(t);
+                i++;
+            }
+            //Case 3: If the incoming symbol is a left parenthesis, push it on
+            //the stack.
+            else if (t.value == '('){
+                opstack.push(t);
+                i++;
+            }
+            //Case 4: If the incoming symbol is a right parenthesis, pop the
+            //stack and print the operators until you see a left parenthesis.
+            else if (t.value == ')'){
+                while(opstack.peek().value != '('){
                     postfix.push(opstack.pop());
                 }
-                opstack.push(t);
+                opstack.pop();//discard parentheses
+                i++;
             }
+            //Case 5: If the incoming symbol has higher precedence than the
+            //top of the stack, push it on the stack.
+            else if (precedence(t) > precedence(opstack.peek())){
+                opstack.push(t);
+                i++;
+            }
+            //Case 6: If the incoming symbol has equal precedence with the
+            //top of the stack, pop opstack and push it to postfix and then
+            //push the incoming operator.
+            else if (precedence(t) == precedence(opstack.peek())){
+                postfix.push(opstack.pop());
+                opstack.push(t);
+                i++;
+            }
+            //Case 7: If the incoming symbol has lower precedence than the
+            //symbol on the top of the stack, pop the stack and push it to
+            //postfix. Then test the incoming operator against the new
+            //top of stack.
             else{
-                postfix.push(t);
+                postfix.push(opstack.pop());
+                //Don't increment
             }
         }
+
+        //There should be no parentheses left.
+        while(opstack.not_empty()){
+            postfix.push(opstack.pop());
+            Token temp = postfix.peek();
+            if(temp.op && (temp.value == '(' || temp.value == ')')){
+                throw std::runtime_error("Mismatched Parentheses");
+            }
+        }
+    }
+    catch(std::runtime_error& e){
+        throw e;
     }
     catch(...){
         throw std::runtime_error("Invalid expression. Please try again.");
     }
-    while(opstack.not_empty()){
-        postfix.push(opstack.pop());
-    }
     return postfix;
 }
-
-//void printTokens(std::vector<Token> in){
-//    for(Token t : in){
-//        if(t.op){
-//            std::cout << char(t.value) << ' ';
-//        }
-//        else{
-//            std::cout << t.value << ' ';
-//        }
-//    }
-//    std::cout << '\n';
-//}
 
 //----------------------------------------[Tree operations]----------------------------------------
 
@@ -301,6 +370,8 @@ int SyntaxTree::evaluate(Node* n){
             return lval * rval;
         case '/':
             return lval / rval;
+        case '@':
+            return lval - rval;
     }
 }
 

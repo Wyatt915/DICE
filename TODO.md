@@ -18,9 +18,11 @@ INTERFACE
 - [ ] Generic counters
     - can be added, removed, renamed, and saved. Useful for tracking temporary stats (Status effects, enemy health, etc).
 
+
 BACKEND / LOGIC
 ===============
 - [ ] GURPS
     - [x] Skill levels
+    - [ ] Rolling at skill levels. i.e. "3d6@DX-1"
 - [ ] D&D
 - [ ] Pathfinder

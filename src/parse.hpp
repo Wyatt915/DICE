@@ -19,8 +19,8 @@ struct Node{
 struct Token{
     Token(bool o, int v):op(o), value(v){}
     Token():op(false), value(0){}
-    bool op;
     int value;
+    bool op;
 };
 
 class TokenStack{
@@ -31,6 +31,7 @@ class TokenStack{
         ~TokenStack();
         void push(Token);
         Token pop();
+        Token peek();
         int size();
         bool is_empty();
         bool not_empty();
