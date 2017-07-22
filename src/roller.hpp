@@ -37,6 +37,7 @@ class Roller{
         void display(int);
         ~Roller();
     private:
+        int prev_cursor_vis;
         bool created;
         bool edited;
         int margin;

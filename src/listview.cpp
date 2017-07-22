@@ -6,38 +6,17 @@
 #include <ncurses.h>
 #include <panel.h>
 
-ListView::ListView(){
-    savefile = nullptr;
-    scroll = 0;
+extern sqlite3* savefile;
+
+ListView::ListView():DiceWin(){
     selection = 0;
-    has_focus = false;
-    std::fill(margin, margin + 4, 1);
-    curx = margin[MLFT];
-    cury = margin[MTOP];
 }
 
-ListView::ListView(sqlite3* db, WinPos def){
-    savefile = db;
-    lwin = newwin(def.h, def.w, def.y, def.x);
-    lpanel = new_panel(lwin);
-    getmaxyx(lwin, fieldheight, fieldwidth);
-    std::fill(margin, margin + 4, 1);
-    curx = margin[MLFT];
-    cury = margin[MTOP];
+ListView::ListView(WinPos def):DiceWin(def){
+    selection = 0;
 }
 
 ListView::~ListView(){
-    //It is VERY IMPORTANT to delete the PANEL FIRST, and the WINDOW LAST.
-    del_panel(lpanel);
-    delwin(lwin);
-}
-
-void ListView::give_focus(){
-    has_focus = true;
-}
-
-void ListView::revoke_focus(){
-    has_focus = false;
 }
 
 void ListView::listen(){
@@ -71,7 +50,7 @@ bool ListView::move_up(){
         cury--;
         selection--;
     }
-    wmove(lwin, cury, curx);
+    wmove(win, cury, curx);
     return true;
 }
 
@@ -92,7 +71,7 @@ bool ListView::move_down(){
         cury++;
         selection++;
     }
-    wmove(lwin, cury, curx);
+    wmove(win, cury, curx);
     return true;
 }
 
@@ -106,18 +85,6 @@ void ListView::setHeader(std::string h){
     header = h;
     has_header = true;
     margin[MTOP] = 2;
-}
-
-void ListView::setTitle(std::string t){
-    title = t;
-}
-
-void ListView::show(){
-    show_panel(lpanel);
-}
-
-void ListView::hide(){
-    hide_panel(lpanel);
 }
 
 

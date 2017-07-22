@@ -2,7 +2,7 @@
 
 #include <ctype.h>
 
-#define EFFROW cury - margin + scroll
+#define EFFROW cury - margin[MTOP] + scroll
 
 void flow(std::vector<std::string>& wrap,std::string in, int width){
     std::string::iterator wspos = std::begin(in); //position of last whitespace
@@ -85,9 +85,9 @@ void Editor::wrap(int row){
 void Editor::insert(char c){
     int row = EFFROW;
     std::string& curline = buffer[row];
-    if(curx - margin > curline.length()) { return; }
+    if(curx - margin[MLFT] > curline.length()) { return; }
     auto inspos = std::begin(curline);
-    std::advance(inspos, curx - margin);
+    std::advance(inspos, curx - margin[MLFT]);
     curline.insert(inspos, c);
     curx++;
     if(c == '\n'){
@@ -98,8 +98,8 @@ void Editor::insert(char c){
     if(curline.length() > fieldwidth){
         int jump = posInWord(inspos);
         wrap(row);        
-        if(curx - margin >= fieldwidth){
-            curx = margin + jump;
+        if(curx - margin[MLFT] >= fieldwidth){
+            curx = margin[MLFT] + jump;
             move_down();
         }
     }
@@ -121,9 +121,9 @@ void Editor::remove(){
     auto txtit = std::begin(buffer);
     std::advance(txtit, row);
     std::string& curline  = buffer[row];
-    if(curx - margin > curline.length()) { return; }
+    if(curx - margin[MLFT] > curline.length()) { return; }
     auto rmpos = std::begin(curline);
-    std::advance(rmpos, curx - margin);
+    std::advance(rmpos, curx - margin[MLFT]);
     if(rmpos != std::end(curline)){
         curline.erase(rmpos);
     }
@@ -146,91 +146,60 @@ void Editor::fill(std::string text){
     update();
 }
 
-//-------------------------------------------------------------------
+//--------------------------------[ncurses-related functions follow]--------------------------------
 
 #include <ncurses.h>
 #include <panel.h>
 
-Editor::Editor(){
-    int h, w;
-    getmaxyx(stdscr, h, w);
-    created = true;
-    edwin = newwin(h/2, w/2, h/4, w/4);
-    wmove(edwin, 1, 1);
-    getyx(edwin, cury, curx);
-    getmaxyx(edwin, fieldheight, fieldwidth);
+Editor::Editor():DiceWin(){
+    getmaxyx(win, fieldheight, fieldwidth);
     buffer.push_back("");
     init();
 }
 
-Editor::Editor(std::string in){
-    int h, w;
-    getmaxyx(stdscr, h, w);
-    created = true;
-    edwin = newwin(h/2, w/2, h/4, w/4);
-    wmove(edwin, 1, 1);
-    getyx(edwin, cury, curx);
-    getmaxyx(edwin, fieldheight, fieldwidth);
-    init();
+Editor::Editor(std::string in):DiceWin(){
+    wmove(win, 1, 1);
+    getyx(win, cury, curx);
+    getmaxyx(win, fieldheight, fieldwidth);
     flow(buffer, in, fieldwidth);
+    init();
 }
 
-Editor::Editor(WINDOW* w){
-    created = false;
-    edwin = w;
-    wmove(edwin, 1, 1);
-    getyx(edwin, cury, curx);
-    getmaxyx(edwin, fieldheight, fieldwidth);
+Editor::Editor(WinPos w):DiceWin(w){
+    getmaxyx(win, fieldheight, fieldwidth);
     init();
     buffer.push_back("");
 }
 
-Editor::Editor(WINDOW* w, std::string in){
-    created = false;
-    edwin = w;
-    wmove(edwin, 1, 1);
-    getyx(edwin, cury, curx);
-    getmaxyx(edwin, fieldheight, fieldwidth);
+Editor::Editor(WinPos w, std::string in):DiceWin(w){
+    wmove(win, 1, 1);
+    getyx(win, cury, curx);
+    getmaxyx(win, fieldheight, fieldwidth);
     init();
     flow(buffer, in, fieldwidth);
 }
 
 void Editor::init(){
+    prev_cursor_vis = 0;
     title = "";
-    edpanel = new_panel(edwin);
     edited = false;
     mode = NORMAL;
     scroll = 0;
-    margin = 1;
-    fieldwidth -= 2*margin;
-    fieldheight -= 2*margin;
-    doupdate();
+    fieldwidth -= margin[MLFT] + margin[MRGT];
+    fieldheight -= margin[MTOP] + margin[MBOT];
+    wmove(win, margin[MLFT], margin[MTOP]);
+    getyx(win, cury, curx);
     update();
+    doupdate();
 }
 
 Editor::~Editor(){
-    del_panel(edpanel);
-    if(created) delwin(edwin);
-}
-
-void Editor::show(){
-    show_panel(edpanel);
-    update_panels();
-}
-
-void Editor::hide(){
-    hide_panel(edpanel);
-    update_panels();
 }
 
 void Editor::clear(){
     buffer.clear();
     buffer.push_back("");
-    wmove(edwin, 0, 0);
-}
-
-void Editor::setTitle(std::string in){
-    title = in;
+    wmove(win, 0, 0);
 }
 
 void Editor::listen(){
@@ -254,74 +223,73 @@ const char* rmnl(std::string in){
 
 void Editor::update(){
     //int clearfromline = cury - 1 > margin ? cury - 1 : margin;
-    wmove(edwin, 0, 0);
-    wclrtobot(edwin);
+    wmove(win, 0, 0);
+    wclrtobot(win);
     
     init_pair(1, COLOR_BLUE, COLOR_BLACK);
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
     
-    wattron(edwin, COLOR_PAIR(1));   
+    wattron(win, COLOR_PAIR(1));   
     for(int i = 0; i < fieldheight; i++){
-        wmove(edwin, i + margin, margin);
-        waddch(edwin, '~');
+        wmove(win, i + margin[MTOP], margin[MLFT]);
+        waddch(win, '~');
     }
-    wattroff(edwin, COLOR_PAIR(1));
+    wattroff(win, COLOR_PAIR(1));
         
-    int tempx = margin;
-    int tempy = margin;
+    int tempx = margin[MLFT];
+    int tempy = margin[MTOP];
     
     for(int i = 0; i + scroll < buffer.size() && i < fieldheight; i++){
-        wmove(edwin, i + margin, margin);
-        waddstr(edwin, rmnl(buffer[i + scroll]));
+        wmove(win, i + margin[MTOP], margin[MLFT]);
+        waddstr(win, rmnl(buffer[i + scroll]));
     }
 
     if(mode == INSERT){
-        wattron(edwin, COLOR_PAIR(2));    
-        box(edwin, 0, 0);
+        wattron(win, COLOR_PAIR(2));    
+        box(win, 0, 0);
         if(title.length() > 0){
-            wmove(edwin, 0, (fieldwidth - title.length() + 2)/2);
-            waddch(edwin, '[');
-            waddstr(edwin, title.c_str());
-            waddch(edwin, ']');
+            wmove(win, 0, (fieldwidth - title.length() + 2)/2);
+            waddch(win, '[');
+            waddstr(win, title.c_str());
+            waddch(win, ']');
         }
-        mvwaddstr(edwin, fieldheight + 2*margin - 1, fieldwidth/4, "[INSERT]");
-        wattroff(edwin, COLOR_PAIR(2));     
+        mvwaddstr(win, fieldheight + margin[MTOP] + margin[MBOT] - 1, fieldwidth/4, "[INSERT]");
+        wattroff(win, COLOR_PAIR(2));     
     }
     if(mode == NORMAL){
-        box(edwin, 0, 0);
+        box(win, 0, 0);
         if(title.length() > 0){
-            wmove(edwin, 0, (fieldwidth - title.length() + 2)/2);
-            waddch(edwin, '[');
-            waddstr(edwin, title.c_str());
-            waddch(edwin, ']');
+            wmove(win, 0, (fieldwidth - title.length() + 2)/2);
+            waddch(win, '[');
+            waddstr(win, title.c_str());
+            waddch(win, ']');
         }
-        mvwaddstr(edwin, fieldheight + 2*margin - 1, fieldwidth/4, "[NORMAL]");
+        mvwaddstr(win, fieldheight + margin[MTOP] + margin[MBOT] - 1, fieldwidth/4, "[NORMAL]");
     }
 
-    wmove(edwin, cury, curx);
-    wrefresh(edwin);
-    //refresh();
+    wmove(win, cury, curx);
+    wrefresh(win);
 }
 
 bool Editor::move_home(){
-    curx = margin;
-    wmove(edwin, cury, curx);
+    curx = margin[MLFT];
+    wmove(win, cury, curx);
     return true;
 }
 
 bool Editor::move_end(){
     int nladj = buffer[EFFROW].back() == '\n' ? 1 : 0;  //Adjustment if there is a newline char.  we do not want to be able to insert after a newline
-    curx = buffer[EFFROW].length() + margin - nladj;
-    wmove(edwin, cury, curx);
+    curx = buffer[EFFROW].length() + margin[MLFT] - nladj;
+    wmove(win, cury, curx);
     return true;
 }
 
 bool Editor::move_up(){
     cury--;
     bool res = true;
-    if(cury < margin){
+    if(cury < margin[MTOP]){
         res = false;
-        cury = margin;
+        cury = margin[MTOP];
         if(scroll > 0){
             scroll--;
             res = true;
@@ -330,11 +298,11 @@ bool Editor::move_up(){
     }
     int len = buffer[EFFROW].length();
     
-    if(len >= 0 && curx - margin > len){
+    if(len >= 0 && curx - margin[MLFT] > len){
         move_end();
     }
     
-    wmove(edwin, cury, curx);
+    wmove(win, cury, curx);
     return res;
 }
 
@@ -350,7 +318,7 @@ bool Editor::move_down(){
             scroll++;
         }
         
-        wmove(edwin, cury, curx);
+        wmove(win, cury, curx);
         update();
         return true;
     }
@@ -364,14 +332,14 @@ bool Editor::move_down(){
     if(len >= 0 && curx > len){
         move_end();
     }
-    wmove(edwin, cury, curx);
+    wmove(win, cury, curx);
     return res;
 }
 
 bool Editor::move_left(){
-    if(curx > margin){
+    if(curx > margin[MLFT]){
         curx--;
-        wmove(edwin, cury, curx);
+        wmove(win, cury, curx);
         return true;
     }
     else if(move_up()){
@@ -382,7 +350,7 @@ bool Editor::move_left(){
 }
 
 bool Editor::move_right(){
-    if(curx - margin <= buffer[EFFROW].length() && buffer[EFFROW][curx - margin] == '\n'){
+    if(curx - margin[MLFT] <= buffer[EFFROW].length() && buffer[EFFROW][curx - margin[MLFT]] == '\n'){
         if(move_down()){
             return move_home();
         }
@@ -391,8 +359,8 @@ bool Editor::move_right(){
         }
     }
     curx++;
-    if(curx <= buffer[EFFROW].length() + margin){
-        wmove(edwin, cury, curx);
+    if(curx <= buffer[EFFROW].length() + margin[MLFT]){
+        wmove(win, cury, curx);
         return true;
     }
     else if(move_down()){
@@ -402,7 +370,7 @@ bool Editor::move_right(){
 }
 
 void Editor::process(int c){
-    getyx(edwin, cury, curx);
+    getyx(win, cury, curx);
     int insertType = -1;
     if(mode == NORMAL && c == 'i'){
         mode = INSERT;
@@ -439,7 +407,7 @@ void Editor::process(int c){
         case '\t':
             if(mode == INSERT){
                 insert(' ');
-                while((curx - margin) % 4 != 0){
+                while((curx - margin[MLFT]) % 4 != 0){
                     insert(' ');
                 }
                 update();
@@ -468,13 +436,13 @@ void Editor::process(int c){
         default:
             if(mode == INSERT){
                 insert(char(c));
-                wmove(edwin, cury, curx);
+                wmove(win, cury, curx);
                 update();
             }
     }
 
-    wmove(edwin, cury, curx);
-    wrefresh(edwin);
+    wmove(win, cury, curx);
+    wrefresh(win);
 }
 
 //////////////////////////////////////////////////////

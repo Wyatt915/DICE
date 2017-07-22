@@ -1,5 +1,8 @@
+//editor.hpp
 #pragma once
 
+#include "utils.hpp"
+#include "dicewindow.hpp"
 #include <string>
 #include <vector>
 
@@ -12,11 +15,11 @@
 typedef struct _win_st WINDOW;
 typedef struct panel PANEL;
 
-class Editor{
+class Editor : public DiceWin{
     public:
         Editor();
-        Editor(WINDOW*);
-        Editor(WINDOW*, std::string);
+        Editor(WinPos);
+        Editor(WinPos, std::string);
         Editor(std::string);
         std::string toString(); //returns the text buffer as a single string.
         void process(int);   //interpret keyboard input
@@ -35,24 +38,12 @@ class Editor{
         void wrap(int row); //greedy word wrap algorithm
         void clear();       //clears the buffer
         void fill(std::string); //fill the buffer with the supplied string
-        void show();
-        void hide();
-        void setTitle(std::string);
         ~Editor();
     private:
-        bool created;
+        int prev_cursor_vis;
         bool edited;
-        int margin;
         int mode;
-        int fieldheight;
-        int fieldwidth;
-        int scroll;
-        int curx;
-        int cury;
         std::vector<std::string> buffer;
-        std::string title;
-        WINDOW* edwin;
-        PANEL* edpanel;        
 };
 
 //////////////////////////////////////////////////////

@@ -29,7 +29,7 @@ void Roller::remove(){
 #include <panel.h>
 
 Roller::Roller(){
-    curs_set(2);
+    prev_cursor_vis =0;
     srand(time(NULL));
     int h, w;
     exprpos = 0;
@@ -101,16 +101,17 @@ void Roller::roll(std::string command){
 }
 
 Roller::~Roller(){
-    curs_set(1);
     del_panel(rollpanel);
     delwin(rollwin);
 }
 
 void Roller::show(){
+    prev_cursor_vis = curs_set(2);
     show_panel(rollpanel);
 }
 
 void Roller::hide(){
+    curs_set(prev_cursor_vis);
     hide_panel(rollpanel);
 }
 

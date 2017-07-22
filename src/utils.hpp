@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 
-
 template<class Element_type, class Container_type>
 bool is_in_list(Element_type item, Container_type list){
     for(Element_type element : list){

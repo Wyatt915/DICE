@@ -18,6 +18,7 @@ INTERFACE
 - [ ] Generic counters
     - can be added, removed, renamed, and saved. Useful for tracking temporary stats (Status effects, enemy health, etc).
 
+- [ ] Multiple entry fields for a window. E.g. to add a new item.
 
 BACKEND / LOGIC
 ===============

@@ -13,6 +13,8 @@
 
 int SCREENH, SCREENW;
 
+sqlite3* savefile;
+
 void rollertest(){
     refresh();
     Roller r;
@@ -21,12 +23,7 @@ void rollertest(){
 }
 
 void lvtest(){
-    sqlite3* db;
     try{
-        int rc = sqlite3_open("skills.db", &db);
-        if(rc != SQLITE_OK){
-            throw std::runtime_error("Error: Could not open database.");
-        }
 
         WinPos dims;
         dims.x = 0;
@@ -34,7 +31,7 @@ void lvtest(){
         dims.w = SCREENW/3;
         dims.h = SCREENH;
         
-        ListSkills l1(db, dims);
+        ListSkills l1(dims);
         l1.show();
         l1.give_focus();
         l1.update();
@@ -62,11 +59,9 @@ void lvtest(){
             }
         }
         endwin();
-        sqlite3_close(db);
     }
     catch(std::exception& e){
         endwin();
-        sqlite3_close(db);
         std::cout << e.what() << "\n";
         getch();
         throw e;
@@ -96,10 +91,16 @@ int main(int argc, char* argv[]){
     getmaxyx(stdscr, SCREENH, SCREENW);
     bool ended = false;
     try{
+        int rc = sqlite3_open(argv[1], &savefile);
+        if(rc != SQLITE_OK){
+            throw std::runtime_error("Error: Could not open database.");
+        }
         lvtest();
+        sqlite3_close(savefile);
     }
     catch(std::exception& e){
         ended = true;
+        sqlite3_close(savefile);
         endwin();
         std::cout << e.what() << "\n";
         return 1;

@@ -1,3 +1,5 @@
+//dicewindow.hpp
+
 #pragma once
 
 #include "utils.hpp"
@@ -12,25 +14,34 @@
 typedef struct _win_st WINDOW;
 typedef struct panel PANEL;
 
-class ListView : public DiceWin{
+class DiceWin{
     public:
-        ListView();
-        ListView(WinPos);
-        bool move_down();
-        bool move_up();
-        int numlines();
-        virtual int process(int) = 0;
-        virtual void add_item() = 0;
-        virtual void edit_item() = 0;
-        //virtual void init() = 0;
+        DiceWin();
+        DiceWin(WinPos);
+        //virtual int process(int) = 0;
         void setFooter(std::string);
         void setHeader(std::string);
-        virtual void update() = 0;
-        void listen();
-        virtual ~ListView();
+        void setTitle(std::string);
+        void show();
+        void hide();
+        void give_focus();
+        void revoke_focus();
+        virtual ~DiceWin();
     protected:
-        int num_items;
-        int selection;
+        bool has_footer;
+        bool has_focus;
+        bool has_header;
+        int curx;
+        int cury;
+        int fieldheight;
+        int fieldwidth;
+        int margin[4]; //{top, right, bottom, left}
+        int scroll;
+        std::string header;
+        std::string footer;
+        std::string title;
+        WINDOW* win;
+        PANEL* pan;
 };
 
 //////////////////////////////////////////////////////
