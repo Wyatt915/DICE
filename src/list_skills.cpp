@@ -4,7 +4,7 @@
 #include "list_skills.hpp"
 #include "sqlite3.h"
 #include "utils.hpp"
-
+#include "parse.hpp"
 #include <ctype.h>
 #include <ncurses.h>
 #include <panel.h>
@@ -79,12 +79,9 @@ ListSkills::ListSkills(WinPos def):ListView(def){
     setHeader(head);
     has_footer = false;
 
-    fieldwidth -= margin[MRGT] + margin[MLFT];
-    fieldheight-= margin[MTOP] + margin[MBOT];
     curx = margin[MLFT];
     cury = margin[MTOP];
     update_panels();
-    update();
     doupdate();
 }
 
@@ -121,8 +118,8 @@ void ListSkills::update(){
     if(has_header){
         mvwaddstr(win, margin[MLFT], 1, header.c_str());
     }
-
-    for(int i = 0; i + scroll < num_items && i - scroll < fieldheight; i++){
+    int i;
+    for(i = 0; i + scroll < num_items && i - scroll < fieldheight; i++){
         wmove(win, i + margin[MTOP] + scroll, margin[MLFT]);
         if(i + scroll == selection && has_focus){
             wattron(win, A_UNDERLINE);
@@ -145,9 +142,10 @@ void ListSkills::update(){
     if(has_focus){ wattron(win, COLOR_PAIR(2)); }
     box(win, 0, 0);
     if(has_focus){ wattroff(win, COLOR_PAIR(2)); }
-    wmove(win, cury, curx);
     wnoutrefresh(win);
+    update_panels();
     doupdate();
+    wmove(win, cury, curx);
 }
 
 //----------------------------------------[Read/Write/Edit]----------------------------------------
@@ -169,7 +167,7 @@ static int read_db_callback(void* data, int argc, char** argv, char** azColName)
     return 0;
 }
 
-static int add_item_callback(void* notused, int argc, char** argv, char** azColName){
+static int null_callback(void* notused, int argc, char** argv, char** azColName){
     return 0;
 }
 void ListSkills::read_db(){
@@ -188,7 +186,7 @@ void ListSkills::read_db(){
 void ListSkills::add_item(){
     Editor e;
     skill newskill;
-    e.setTitle("New _item");
+    e.setTitle("New Skill");
     e.show();
     e.listen();
     newskill.name = e.toString();
@@ -201,7 +199,7 @@ void ListSkills::add_item(){
         std::string sql = "INSERT INTO skills (name,base,diff,description,pnts) VALUES (";
         sql += to_string(newskill) + ");";
         char* zErrMsg = 0;
-        int rc = sqlite3_exec(savefile, sql.c_str(), add_item_callback, NULL, &zErrMsg);
+        int rc = sqlite3_exec(savefile, sql.c_str(), null_callback, NULL, &zErrMsg);
         if(rc != SQLITE_OK){
             std::string errstr = "SQLite error: ";
             errstr += zErrMsg;
@@ -226,15 +224,29 @@ void ListSkills::edit_item(){
     e.listen();
     if(e.has_changed()){
         listitems[selection].desc = e.toString();
-        //savefile << "UPDATE skills SET description = ? WHERE name = ?;"
-        //    << listitems[selection].desc << listitems[selection].name; 
+        std::string sql = "UPDATE skills SET description='" + listitems[selection].desc
+            + "' WHERE id=" + std::to_string(listitems[selection].id) + ";";
+        char* zErrMsg = 0;
+        int rc = sqlite3_exec(savefile, sql.c_str(), null_callback, NULL, &zErrMsg);
+        if(rc != SQLITE_OK){
+            std::string errstr = "SQLite error: ";
+            errstr += zErrMsg;
+            sqlite3_free(zErrMsg);
+            e.hide();
+            throw std::runtime_error(errstr);
+        }
     }
     e.hide();
 }
 
 void ListSkills::investPoints(int howmany){
     listitems[selection].pnts += howmany;
-    //TODO debit/credit to unspent points
+    std::string s = std::to_string(howmany);
+    std::string id = std::to_string(listitems[selection].id);
+    std::string sql = "BEGIN;"
+    sql += "UPDATE skills SET pnts =  pnts + " + s + " WHERE id = " + id + ";"
+    sql += "UPDATE character SET points = points - " + s + " WHERE id = 1;"
+    sql += "CASE WHEN COMMIT;"
     update();
 }
 

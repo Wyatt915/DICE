@@ -268,7 +268,8 @@ void Editor::update(){
     }
 
     wmove(win, cury, curx);
-    wrefresh(win);
+    wnoutrefresh(win);
+    doupdate();
 }
 
 bool Editor::move_home(){

@@ -1,11 +1,18 @@
 /*
 *   DICE database schema for GURPS
-*   Version 0.0.2
+*   Version 0.0.3
 */
 
 ---------------------------------------[Attributes and Skills]-------------------------------------
 
-CREATE TABLE 'attributes' (
+CREATE TABLE IF NOT EXISTS 'character'(
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    points INTEGER,
+    startcash INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS 'attributes' (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     abbr TEXT NOT NULL,
@@ -25,7 +32,7 @@ INSERT INTO attributes (name, abbr, cost) VALUES
 
 /* Secondary characteristics depend on base attributes. */
 
-CREATE TABLE 'secondary' (
+CREATE TABLE IF NOT EXISTS 'secondary' (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     abbr TEXT,
@@ -48,7 +55,7 @@ INSERT INTO secondary (name, abbr, cost, base) VALUES
     ('Basic Move',      NULL,   5,      '(HT+DX)/4');
 
 /* Contains both advantages and disadvantages */
-CREATE TABLE 'prosandcons' (
+CREATE TABLE IF NOT EXISTS 'prosandcons' (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     minimum INTEGER,    --Minimum number of points to unlock the first level
@@ -57,7 +64,7 @@ CREATE TABLE 'prosandcons' (
     description, TEXT
 );
 
-CREATE TABLE 'skills' (
+CREATE TABLE IF NOT EXISTS 'skills' (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     base TEXT NOT NULL, --ST, DX, etc. or another skill name
@@ -66,16 +73,16 @@ CREATE TABLE 'skills' (
     description TEXT
 );
 
-CREATE TABLE 'knownskills' (
+CREATE TABLE IF NOT EXISTS 'knownskills' (
     id INTEGER PRIMARY KEY,
     pnts INTEGER,       --points invested into skill
     skill INTEGER,
-    FOREIGN KEY(skill) REGERENCES skills(id)
+    FOREIGN KEY(skill) REFERENCES skills(id)
 );
 
 ---------------------------------------[Currency and Inventory]-------------------------------------
 
-CREATE TABLE 'inventory' (
+CREATE TABLE IF NOT EXISTS 'inventory' (
     id INTEGER PRIMARY KEY,
     item TEXT NOT NULL,
     weight REAL,
@@ -85,7 +92,7 @@ CREATE TABLE 'inventory' (
     lore TEXT
 );
 
-CREATE TABLE 'handweapons'(
+CREATE TABLE IF NOT EXISTS 'handweapons'(
     id INTEGER PRIMARY KEY,
     weapon TEXT NOT NULL,
     swing INTEGER,
@@ -100,8 +107,9 @@ CREATE TABLE 'handweapons'(
     FOREIGN KEY(skill) REFERENCES skills(id)
 );
 
-CREATE TABLE 'rangedweapons'(
+CREATE TABLE IF NOT EXISTS 'rangedweapons'(
     id INTEGER PRIMARY KEY,
+    weapon TEXT NOT NULL,
     damage INTEGER,
     acc INTEGER,
     range INTEGER,
@@ -116,7 +124,15 @@ CREATE TABLE 'rangedweapons'(
     weight REAL
 );
 
-CREATE TABLE 'transactions' (
+CREATE TABLE IF NOT EXISTS 'armor'(
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    dr INTEGER,
+    weight REAL,
+    cost INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS 'transactions' (
     id INTEGER PRIMARY KEY,
     cost INTEGER NOT NULL,
     quantity INTEGER,    --For buying/selling multiple items i.e. 3 quivers of arrows
@@ -126,14 +142,14 @@ CREATE TABLE 'transactions' (
 
 -------------------------------------------[Notes and Data]-----------------------------------------
 
-CREATE TABLE 'notes' (
+CREATE TABLE IF NOT EXISTS 'notes' (
     id INTEGER PRIMARY KEY,
     title TEXT,
     content TEXT NOT NULL,
     priority INTEGER
 );
 
-CREATE TABLE 'quests' (
+CREATE TABLE IF NOT EXISTS 'quests' (
     id INTEGER PRIMARY KEY,
     title TEXT,
     givenBy TEXT,

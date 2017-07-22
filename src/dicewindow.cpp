@@ -13,6 +13,9 @@ DiceWin::DiceWin(){
     std::fill(margin, margin + 4, 1);
     curx = margin[MLFT];
     cury = margin[MTOP];
+    getmaxyx(win, fieldheight, fieldwidth);
+    fieldwidth -= margin[MRGT] + margin[MLFT];
+    fieldheight-= margin[MTOP] + margin[MBOT];
     has_focus = false;
     scroll = 0;
 }
@@ -23,6 +26,9 @@ DiceWin::DiceWin(WinPos def){
     std::fill(margin, margin + 4, 1);
     curx = margin[MLFT];
     cury = margin[MTOP];
+    getmaxyx(win, fieldheight, fieldwidth);
+    fieldwidth -= margin[MRGT] + margin[MLFT];
+    fieldheight-= margin[MTOP] + margin[MBOT];
     scroll = 0;
     has_focus = false;
 }
