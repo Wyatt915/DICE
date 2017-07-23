@@ -1,3 +1,4 @@
+#include "characterdata.hpp"
 #include "editor.hpp"
 #include "list_skills.hpp"
 #include "parse.hpp"
@@ -11,10 +12,10 @@
 #include <string>
 #include <vector>
 
-int SCREENH, SCREENW;
 
-sqlite3* savefile;
-int total_points;
+sqlite3* savefile; //Global variable
+
+gurps_cdata character_data; //global character data struct
 
 void rollertest(){
     refresh();
@@ -25,7 +26,8 @@ void rollertest(){
 
 void lvtest(){
     try{
-
+        int SCREENH, SCREENW;
+        getmaxyx(stdscr, SCREENH, SCREENW);
         WinPos dims;
         dims.x = 0;
         dims.y = 0;
@@ -95,7 +97,6 @@ static int init_callback(void* notused, int argc, char** argv, char ** azColName
 int main(int argc, char* argv[]){
     start_curses();
     set_escdelay(10);
-    getmaxyx(stdscr, SCREENH, SCREENW);
     total_points = 0;
     try{
         int rc = sqlite3_open(argv[1], &savefile);

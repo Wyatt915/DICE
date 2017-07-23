@@ -48,8 +48,8 @@ INSERT INTO secondary (name, abbr, cost, base) VALUES
     ('Damage',          'Dmg',  NULL,   'ST'),
     ('Basic Lift',      'BL',   NULL,   '(ST*ST)/5'),
     ('Hit Points',      'HP',   2,      'HT'),
-    ('Will',            NULL,   5,      'IQ'),
-    ('Perception',      'Per',  5,      'IQ'),
+    ('Will',            'WILL', 5,      'IQ'),
+    ('Perception',      'PER',  5,      'IQ'),
     ('Fatigue Points',  'FP',   3,      'HT'),
     ('Basic Speed',     NULL,   5,      'HT+DX'),    --Measured in fourths of a yard
     ('Basic Move',      NULL,   5,      '(HT+DX)/4');
