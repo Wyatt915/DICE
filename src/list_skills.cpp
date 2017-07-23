@@ -12,7 +12,7 @@
 #include <string.h>
 
 extern sqlite3* savefile;
-
+extern int total_points;
 
 std::string find_rel_lvl(skill s){
     int level;
@@ -132,8 +132,13 @@ void ListSkills::update(){
         else{
             waddstr(win, listitems[i + scroll].name.c_str());
         }
+        std::string abs_level = std::to_string(evaluate(find_rel_lvl(listitems[i+scroll])));
         wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[1] + 1);
+        waddstr(win, abs_level.c_str());
+        
+        wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[2] + 1);
         waddstr(win, find_rel_lvl(listitems[i+scroll]).c_str());
+        
         std::string invested = "[" + std::to_string(listitems[i + scroll].pnts) + "]";
         wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[3] + 1);
         waddstr(win, invested.c_str());
@@ -240,13 +245,23 @@ void ListSkills::edit_item(){
 }
 
 void ListSkills::investPoints(int howmany){
+    if(total_points - howmany < 0) { return; }
+    total_points -= howmany;
     listitems[selection].pnts += howmany;
     std::string s = std::to_string(howmany);
     std::string id = std::to_string(listitems[selection].id);
-    std::string sql = "BEGIN;"
-    sql += "UPDATE skills SET pnts =  pnts + " + s + " WHERE id = " + id + ";"
-    sql += "UPDATE character SET points = points - " + s + " WHERE id = 1;"
-    sql += "CASE WHEN COMMIT;"
+    std::string sql = "BEGIN;";
+    sql += "UPDATE skills SET pnts =  pnts + " + s + " WHERE id = " + id + ";";
+    sql += "UPDATE character SET points = points - " + s + " WHERE id = 1;";
+    sql += "COMMIT;";
+    char* zErrMsg = 0;
+    int rc = sqlite3_exec(savefile, sql.c_str(), null_callback, NULL, &zErrMsg);
+    if(rc != SQLITE_OK){
+        std::string errstr = "SQLite error: ";
+        errstr += zErrMsg;
+        sqlite3_free(zErrMsg);
+        throw std::runtime_error(errstr);
+    }
     update();
 }
 

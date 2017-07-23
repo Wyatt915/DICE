@@ -3,3 +3,5 @@ INSERT INTO skills (name, base, diff, pnts) VALUES
 ("Acting", "IQ", "AVERAGE", 4),
 ("Climbing", "DX", "AVERAGE", 4),
 ("Esoteric Medicine", "PER", "HARD", 1);
+
+INSERT INTO character (name, points) VALUES ('Mankoyama', 0);

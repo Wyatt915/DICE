@@ -63,6 +63,7 @@ class SyntaxTree{
         int roll(int, int);
 };
 
+int evaluate(std::string);
 
 //////////////////////////////////////////////////////
 //                                                  //

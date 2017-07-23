@@ -379,6 +379,11 @@ std::string SyntaxTree::str(){
     return expr;
 }
 
+int evaluate(std::string expr){
+    SyntaxTree s(expr);
+    return s.evaluate();
+}
+
 //////////////////////////////////////////////////////
 //                                                  //
 //      oooooooooo.    o8o                          //
