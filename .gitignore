@@ -5,9 +5,10 @@
 *.out
 *.rpg
 *.swp
+*.sync-conflict*
 
 dice
 
 resources/
 sqlite/
-src/wip/
+wip/

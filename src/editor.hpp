@@ -2,7 +2,7 @@
 #pragma once
 
 #include "utils.hpp"
-#include "dicewindow.hpp"
+#include "window.hpp"
 #include <string>
 #include <vector>
 

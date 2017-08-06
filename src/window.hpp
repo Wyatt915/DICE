@@ -1,4 +1,4 @@
-//dicewindow.hpp
+//window.hpp
 
 #pragma once
 

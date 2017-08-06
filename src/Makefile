@@ -1,6 +1,6 @@
 CC=gcc
 CXX=g++
-CXXFLAGS=-c -g -std=c++14 -O0
+CXXFLAGS=-c -g -std=c++14
 LNFLAGS=-lpanel -lncurses
 
 EXEC = dice
@@ -20,5 +20,5 @@ sqlite3.o: sqlite3.c
 
 # To remove generated files
 clean:
-	rm -f $(EXEC) $(OBJECTS)
+	rm -f $(OBJECTS)
 

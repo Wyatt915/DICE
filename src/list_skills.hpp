@@ -8,12 +8,12 @@
 #include <vector>
 
 struct skill{
-    unsigned long id;   //database ID of the skill
-    std::string name;   //Name of the skill
-    std::string base;   //base attribute or base skill
-    char diff;          //difficulty
-    std::string desc;   //description
-    int pnts;           //points invested
+    unsigned long id = 0;    //database ID of the skill
+    std::string name = "";   //Name of the skill
+    std::string base = "";   //base attribute or base skill
+    char diff = 'E';         //difficulty
+    std::string desc = "";   //description
+    int points = 0;           //points invested
 };
 
 std::string find_rel_lvl(skill s);

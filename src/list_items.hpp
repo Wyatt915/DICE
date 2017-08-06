@@ -8,13 +8,13 @@
 #include <vector>
 
 struct item{
-    unsigned long id;
-    std::string name;
-    double weight;
-    int cost;
-    int quantity;
-    std::string desc;
-    std::string lore;
+    unsigned long id = 0;
+    std::string name = "";
+    double weight = 0.0;
+    int cost = 0;
+    int quantity = 0;
+    std::string desc = "";
+    std::string lore = "";
 };
 
 class ListItems : public ListView{
@@ -42,7 +42,7 @@ class ListItems : public ListView{
     private:
         bool created;
         int tabstops[4];
-        std::vector<skill> listitems;
+        std::vector<item> inventory;
 };
 
 //////////////////////////////////////////////////////

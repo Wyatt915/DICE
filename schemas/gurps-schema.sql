@@ -8,7 +8,7 @@
 CREATE TABLE IF NOT EXISTS 'character'(
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
-    points INTEGER,
+    unspentpoints INTEGER,
     startcash INTEGER
 );
 
@@ -16,18 +16,18 @@ CREATE TABLE IF NOT EXISTS 'attributes' (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     abbr TEXT NOT NULL,
-    cost INTEGER NOT NULL,
-    invested INTEGER,
+    cost INTEGER NOT NULL DEFAULT 1,
+    points INTEGER DEFAULT 0,
     lvl, INTEGER
 );
 
 /* Populate the attributes table with default values */
 
-INSERT INTO attributes (name, abbr, cost) VALUES
-    ('Strength', 'ST', 10),
-    ('Dexterity', 'DX', 20),
-    ('Intelligence', 'IQ', 20),
-    ('Health', 'HT', 20);
+INSERT INTO attributes (name, abbr, cost, lvl) VALUES
+    ('STRENGTH',      'ST',  10, 10),
+    ('DEXTERITY',     'DX',  20, 10),
+    ('INTELLIGENCE',  'IQ',  20, 10),
+    ('HEALTH',        'HT',  20, 10);
 
 
 /* Secondary characteristics depend on base attributes. */
@@ -36,30 +36,30 @@ CREATE TABLE IF NOT EXISTS 'secondary' (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     abbr TEXT,
-    cost INTEGER,   --cost in points per level
-    value INTEGER,
-    currentValue INTEGER,
+    cost INTEGER DEFAULT 1,   --cost in points per lvl
+    points INTEGER DEFAULT 0,
+    currentValue INTEGER DEFAULT 0,
     base TEXT       --base value in relation to primary attributes
 );
 
 /* Populate defaults for secondary attributes */
 
 INSERT INTO secondary (name, abbr, cost, base) VALUES
-    ('Damage',          'Dmg',  NULL,   'ST'),
-    ('Basic Lift',      'BL',   NULL,   '(ST*ST)/5'),
-    ('Hit Points',      'HP',   2,      'HT'),
-    ('Will',            'WILL', 5,      'IQ'),
-    ('Perception',      'PER',  5,      'IQ'),
-    ('Fatigue Points',  'FP',   3,      'HT'),
-    ('Basic Speed',     NULL,   5,      'HT+DX'),    --Measured in fourths of a yard
-    ('Basic Move',      NULL,   5,      '(HT+DX)/4');
+    ('DAMAGE',          'DMG',  1,      'ST'),
+    ('BASIC LIFT',      'BL',   1,      '(ST*ST)/5'),
+    ('HIT POINTS',      'HP',   2,      'HT'),
+    ('WILL',            'WILL', 5,      'IQ'),
+    ('PERCEPTION',      'PER',  5,      'IQ'),
+    ('FATIGUE POINTS',  'FP',   3,      'HT'),
+    ('BASIC SPEED',     'BL',   5,      'HT+DX'),    --Measured in fourths of a yard
+    ('BASIC MOVE',      'BM',   5,      '(HT+DX)/4');
 
 /* Contains both advantages and disadvantages */
 CREATE TABLE IF NOT EXISTS 'prosandcons' (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
-    minimum INTEGER,    --Minimum number of points to unlock the first level
-    cost INTEGER,       --Cost per level after minimum, if applicable. If NULL, the player must enter the cost manually.
+    minimum INTEGER,    --Minimum number of points to unlock the first lvl
+    cost INTEGER,       --Cost per lvl after minimum, if applicable. If NULL, the player must enter the cost manually.
     maxLevel INTEGER,   --some advantages have a cap, others do not.
     description, TEXT
 );
@@ -69,13 +69,13 @@ CREATE TABLE IF NOT EXISTS 'skills' (
     name TEXT NOT NULL,
     base TEXT NOT NULL, --ST, DX, etc. or another skill name
     diff TEXT NOT NULL, --EASY, AVERAGE, HARD, VERY HARD
-    pnts INTEGER,       --points invested into skill
+    points INTEGER,       --points points into skill
     description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS 'knownskills' (
     id INTEGER PRIMARY KEY,
-    pnts INTEGER,       --points invested into skill
+    points INTEGER,       --points invested into skill
     skill INTEGER,
     FOREIGN KEY(skill) REFERENCES skills(id)
 );
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS 'knownskills' (
 
 CREATE TABLE IF NOT EXISTS 'inventory' (
     id INTEGER PRIMARY KEY,
-    item TEXT NOT NULL,
+    name TEXT NOT NULL,
     weight REAL,
     quantity INTEGER,
     cost INTEGER,
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS 'inventory' (
 
 CREATE TABLE IF NOT EXISTS 'handweapons'(
     id INTEGER PRIMARY KEY,
-    weapon TEXT NOT NULL,
+    name TEXT NOT NULL,
     swing INTEGER,
     swingtype TEXT, --Crushing/Cutting
     thrust INTEGER, 
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS 'handweapons'(
 
 CREATE TABLE IF NOT EXISTS 'rangedweapons'(
     id INTEGER PRIMARY KEY,
-    weapon TEXT NOT NULL,
+    name TEXT NOT NULL,
     damage INTEGER,
     acc INTEGER,
     range INTEGER,

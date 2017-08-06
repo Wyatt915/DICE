@@ -1,6 +1,6 @@
-//dicewindow.cpp
+//window.cpp
 
-#include "dicewindow.hpp"
+#include "window.hpp"
 
 #include <ncurses.h>
 #include <panel.h>

@@ -1,10 +1,23 @@
-//list_skills.cpp
+/***************************************************************************************************
+*                                                                                                  *
+*                                        DICE source file                                          *
+*   File:      list_skills.cpp                                                                     *
+*   Author:    Wyatt Sheffield                                                                     *
+*                                                                                                  *
+*   Displays a verticall scroll window containing a list of all a character's skills, including    *
+*   their difficulty and relative level.                                                           *
+*                                                                                                  *
+*                               Copyright (c) 2017 Wyatt Sheffield                                 *
+*                                                                                                  *
+***************************************************************************************************/
 
+#include "characterdata.hpp"
 #include "editor.hpp"
 #include "list_skills.hpp"
 #include "sqlite3.h"
 #include "utils.hpp"
 #include "parse.hpp"
+
 #include <ctype.h>
 #include <ncurses.h>
 #include <panel.h>
@@ -12,11 +25,11 @@
 #include <string.h>
 
 extern sqlite3* savefile;
-extern int total_points;
+extern gurps_cdata gchar_data;
 
 std::string find_rel_lvl(skill s){
     int level;
-    int points = s.pnts;
+    int points = s.points;
     //gives the level with 1 point invested
     switch (s.diff){
         case 'E':
@@ -57,7 +70,7 @@ std::string to_string(const skill& s){
     out += s.base + ",";
     out += s.diff + ",";
     out += s.desc + ",";
-    out += std::to_string(s.pnts);
+    out += std::to_string(s.points);
     return out;
 }
 
@@ -139,7 +152,7 @@ void ListSkills::update(){
         wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[2] + 1);
         waddstr(win, find_rel_lvl(listitems[i+scroll]).c_str());
         
-        std::string invested = "[" + std::to_string(listitems[i + scroll].pnts) + "]";
+        std::string invested = "[" + std::to_string(listitems[i + scroll].points) + "]";
         wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[3] + 1);
         waddstr(win, invested.c_str());
         wmove(win, cury, curx);
@@ -158,15 +171,12 @@ void ListSkills::update(){
 static int read_db_callback(void* data, int argc, char** argv, char** azColName){
     skill temp;
     std::string diff;
-    std::stringstream(argv[0]) >> temp.id;
-    temp.name = std::string(argv[1]);
-    std::stringstream(argv[2]) >> temp.base;
-    temp.diff = argv[3][0];
-    temp.desc = "";
-    if(argv[4] != nullptr){ 
-        temp.desc = std::string(argv[4]);
-    }
-    std::stringstream(argv[5]) >> temp.pnts;
+    if(argv[0]) std::stringstream(argv[0]) >> temp.id;
+    if(argv[1]) temp.name = std::string(argv[1]);
+    if(argv[2]) std::stringstream(argv[2]) >> temp.base;
+    if(argv[3]) temp.diff = argv[3][0];
+    if(argv[4]) temp.desc = std::string(argv[4]);
+    if(argv[5]) std::stringstream(argv[5]) >> temp.points;
     std::vector<skill>* skills  = reinterpret_cast<std::vector<skill>*>(data);
     skills->push_back(temp);
     return 0;
@@ -177,7 +187,7 @@ static int null_callback(void* notused, int argc, char** argv, char** azColName)
 }
 void ListSkills::read_db(){
     skill temp;
-    const char* sql = "SELECT id,name,base,diff,description,pnts FROM skills";
+    const char* sql = "SELECT id,name,base,diff,description,points FROM skills";
     char* zErrMsg = 0;
     int rc = sqlite3_exec(savefile, sql, read_db_callback, (void*)&listitems, &zErrMsg);
     if(rc != SQLITE_OK){
@@ -201,7 +211,7 @@ void ListSkills::add_item(){
         e.listen();
         newskill.desc = e.toString();
         listitems.push_back(newskill);
-        std::string sql = "INSERT INTO skills (name,base,diff,description,pnts) VALUES (";
+        std::string sql = "INSERT INTO skills (name,base,diff,description,points) VALUES (";
         sql += to_string(newskill) + ");";
         char* zErrMsg = 0;
         int rc = sqlite3_exec(savefile, sql.c_str(), null_callback, NULL, &zErrMsg);
@@ -245,13 +255,13 @@ void ListSkills::edit_item(){
 }
 
 void ListSkills::investPoints(int howmany){
-    if(total_points - howmany < 0) { return; }
-    total_points -= howmany;
-    listitems[selection].pnts += howmany;
+    if(gchar_data.unspent_points - howmany < 0) { return; }
+    gchar_data.unspent_points -= howmany;
+    listitems[selection].points += howmany;
     std::string s = std::to_string(howmany);
     std::string id = std::to_string(listitems[selection].id);
     std::string sql = "BEGIN;";
-    sql += "UPDATE skills SET pnts =  pnts + " + s + " WHERE id = " + id + ";";
+    sql += "UPDATE skills SET points =  points + " + s + " WHERE id = " + id + ";";
     sql += "UPDATE character SET points = points - " + s + " WHERE id = 1;";
     sql += "COMMIT;";
     char* zErrMsg = 0;

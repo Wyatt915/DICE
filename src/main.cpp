@@ -1,5 +1,20 @@
+/***************************************************************************************************
+*                                                                                                  *
+*                                        DICE source file                                          *
+*   File:      main.cpp                                                                            *
+*   Author:    Wyatt Sheffield                                                                     *
+*                                                                                                  *
+*   Contains the main() function, startup, and cleanup routines. Also defines a few global         *
+*   variables like the database connection to the savefile and a structure to hold data about      *
+*   the character in memory.                                                                       *
+*                                                                                                  *
+*                               Copyright (c) 2017 Wyatt Sheffield                                 *
+*                                                                                                  *
+***************************************************************************************************/
+
 #include "characterdata.hpp"
 #include "editor.hpp"
+#include "list_items.hpp"
 #include "list_skills.hpp"
 #include "parse.hpp"
 #include "roller.hpp"
@@ -15,7 +30,7 @@
 
 sqlite3* savefile; //Global variable
 
-gurps_cdata character_data; //global character data struct
+gurps_cdata gchar_data; //global character data struct
 
 void rollertest(){
     refresh();
@@ -71,6 +86,54 @@ void lvtest(){
     }
 }
 
+void multiwindowtest(){
+    try{
+        int SCREENH, SCREENW;
+        getmaxyx(stdscr, SCREENH, SCREENW);
+        WinPos dims;
+        dims.x = 0;
+        dims.y = 0;
+        dims.w = SCREENW/3;
+        dims.h = SCREENH;
+        
+        ListItems l1(dims);
+        l1.show();
+        l1.give_focus();
+        l1.update();
+        
+        Roller r;
+        r.hide();
+        refresh();
+        update_panels();
+        doupdate();
+        int c;
+        while((c = getch()) != 'q'){
+            if(c == ' '){
+                l1.revoke_focus();
+                r.show();
+                r.roll("3d6");
+                r.update();
+                r.listen();
+                r.hide();
+                update_panels();
+                refresh();
+            }
+            else{
+                l1.give_focus();
+                l1.process(c);
+            }
+        }
+        endwin();
+    }
+    catch(std::exception& e){
+        endwin();
+        std::cout << e.what() << "\n";
+        getch();
+        throw e;
+    }
+}
+
+
 void start_curses(){
     initscr();
     cbreak();
@@ -88,36 +151,27 @@ void start_curses(){
     } 
 }
 
-static int init_callback(void* notused, int argc, char** argv, char ** azColName)
-{
-    total_points = std::stoi(std::string(argv[0]));
-    return 0;
-}
-
 int main(int argc, char* argv[]){
     start_curses();
     set_escdelay(10);
-    total_points = 0;
+
     try{
         int rc = sqlite3_open(argv[1], &savefile);
-        if(rc != SQLITE_OK){
-            throw std::runtime_error("Error: Could not open database.");
-        }
-        char* zErrMsg = nullptr;
-        std::string sql = "SELECT points FROM character WHERE id=1";
-        rc = sqlite3_exec(savefile, sql.c_str(), init_callback, NULL, &zErrMsg);
-        if(rc != SQLITE_OK){
-            std::string s = zErrMsg;
-            sqlite3_free(zErrMsg);
-            throw std::runtime_error(s);
-        }
+        if(rc != SQLITE_OK){ throw std::runtime_error("Failed to open database."); }
+        load_cdata();
         lvtest();
         sqlite3_close(savefile);
+    }
+    catch(std::runtime_error& e){
+        sqlite3_close(savefile);
+        endwin();
+        std::cerr << e.what() << "\n";
+        return 1;
     }
     catch(std::exception& e){
         sqlite3_close(savefile);
         endwin();
-        std::cout << e.what() << "\n";
+        std::cerr << e.what() << "\n";
         return 1;
     }
     endwin();
