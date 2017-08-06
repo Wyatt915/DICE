@@ -19,13 +19,16 @@ class DiceWin{
         DiceWin();
         DiceWin(WinPos);
         //virtual int process(int) = 0;
-        void setFooter(std::string);
-        void setHeader(std::string);
+        //void setFooter(std::string);
+        //void setHeader(std::string);
         void setTitle(std::string);
         void show();
         void hide();
         void give_focus();
         void revoke_focus();
+        virtual void listen() = 0;
+        virtual void process(int) = 0;
+        virtual void update() = 0;
         virtual ~DiceWin();
     protected:
         bool has_footer;

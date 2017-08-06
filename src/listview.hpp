@@ -19,13 +19,11 @@ class ListView : public DiceWin{
         bool move_down();
         bool move_up();
         int numlines();
-        virtual int process(int) = 0;
-        virtual void add_item() = 0;
-        virtual void edit_item() = 0;
+        //virtual void add_item() = 0;
+        //virtual void edit_item() = 0;
         //virtual void init() = 0;
         void setFooter(std::string);
         void setHeader(std::string);
-        virtual void update() = 0;
         void listen();
         virtual ~ListView();
     protected:

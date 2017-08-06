@@ -23,7 +23,7 @@ class ListItems : public ListView{
         ListItems();
         ListItems(WinPos);
         int numlines();
-        int process(int);
+        void process(int);
         void add_item();
         void remove_item();
         void edit_item();

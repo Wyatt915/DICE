@@ -24,7 +24,7 @@ class ListSkills : public ListView{
         ListSkills();
         ListSkills(WinPos);
         int numlines();
-        int process(int);
+        void process(int);
         void add_item();
         void remove_item();
         void edit_item();

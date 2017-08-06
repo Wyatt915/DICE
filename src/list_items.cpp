@@ -233,7 +233,7 @@ void ListItems::investPoints(int howmany){
 
 //--------------------------------------------[Process]--------------------------------------------
 
-int ListItems::process(int c){
+void ListItems::process(int c){
     switch(c){
         case KEY_UP:
             move_up();

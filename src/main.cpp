@@ -88,6 +88,7 @@ void lvtest(){
 
 void multiwindowtest(){
     try{
+        int numwindows = 2;
         int SCREENH, SCREENW;
         getmaxyx(stdscr, SCREENH, SCREENW);
         WinPos dims;
@@ -95,11 +96,15 @@ void multiwindowtest(){
         dims.y = 0;
         dims.w = SCREENW/3;
         dims.h = SCREENH;
+        ListView** windows = new ListView*[numwindows];
+        windows[0] = new ListSkills(dims);
+        dims.x = dims.w +1;
+        windows[1] = new ListItems(dims);
         
-        ListItems l1(dims);
-        l1.show();
-        l1.give_focus();
-        l1.update();
+        windows[0]->show();
+        windows[0]->update();
+        windows[1]->show();
+        windows[1]->update();
         
         Roller r;
         r.hide();
@@ -107,22 +112,33 @@ void multiwindowtest(){
         update_panels();
         doupdate();
         int c;
+        int currentWindow = 0;
         while((c = getch()) != 'q'){
             if(c == ' '){
-                l1.revoke_focus();
+                windows[currentWindow]->revoke_focus();
                 r.show();
                 r.roll("3d6");
                 r.update();
                 r.listen();
                 r.hide();
+                windows[currentWindow]->give_focus();
                 update_panels();
                 refresh();
             }
+            else if (c == '\t'){
+                windows[currentWindow]->revoke_focus();
+                windows[currentWindow]->update();
+                currentWindow = (++currentWindow) % numwindows;
+                windows[currentWindow]->give_focus();
+                windows[currentWindow]->update();
+            }
             else{
-                l1.give_focus();
-                l1.process(c);
+                windows[currentWindow]->process(c);
             }
         }
+        delete windows[0];
+        delete windows[1];
+        delete[] windows;
         endwin();
     }
     catch(std::exception& e){
@@ -159,7 +175,8 @@ int main(int argc, char* argv[]){
         int rc = sqlite3_open(argv[1], &savefile);
         if(rc != SQLITE_OK){ throw std::runtime_error("Failed to open database."); }
         load_cdata();
-        lvtest();
+        //lvtest();
+        multiwindowtest();
         sqlite3_close(savefile);
     }
     catch(std::runtime_error& e){

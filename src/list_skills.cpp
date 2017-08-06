@@ -277,7 +277,7 @@ void ListSkills::investPoints(int howmany){
 
 //--------------------------------------------[Process]--------------------------------------------
 
-int ListSkills::process(int c){
+void ListSkills::process(int c){
     switch(c){
         case KEY_UP:
             move_up();
