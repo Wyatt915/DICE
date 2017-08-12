@@ -180,8 +180,8 @@ Editor::Editor(WinPos w, std::string in):DiceWin(w){
 }
 
 void Editor::init(){
-    prev_cursor_vis = 0;
     title = "";
+    defaultcursor = 1;
     edited = false;
     mode = NORMAL;
     scroll = 0;

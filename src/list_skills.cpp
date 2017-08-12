@@ -74,10 +74,18 @@ std::string to_string(const skill& s){
     return out;
 }
 
+std::vector<std::string> disp_as_strvec(skill s){
+    std::vector<std::string> out;
+    out.push_back(s.name);
+    out.push_back(std::to_string(evaluate(find_rel_lvl(s))));
+    out.push_back(find_rel_lvl(s));
+    out.push_back("[" + std::to_string(s.points) + "]");
+    return out;
+}
+
 //-------------------------------------[Constructor/Destructor]-------------------------------------
 
 ListSkills::ListSkills(WinPos def):ListView(def){
-    curs_set(0); //invisible cursor
     try{
         read_db();
     }
@@ -85,12 +93,16 @@ ListSkills::ListSkills(WinPos def):ListView(def){
         mvaddstr(0, 0, e.what());
         throw e;
     }
-    num_items = listitems.size();
+    num_items = skillvec.size();
 
     setTitle("Skills");
     std::string head = createHeader();
     setHeader(head);
     has_footer = false;
+    
+    for(skill s : skillvec){
+        contents.push_back(disp_as_strvec(s));
+    }
 
     curx = margin[MLFT];
     cury = margin[MTOP];
@@ -119,52 +131,6 @@ std::string ListSkills::createHeader(){
     return h;
 }
 
-//---------------------------------------[ncurses functions]---------------------------------------
-
-void ListSkills::update(){
-    wmove(win, 0, 0);
-    wclrtobot(win);
-    
-    init_pair(1, COLOR_BLUE, COLOR_BLACK);
-    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
-    
-    if(has_header){
-        mvwaddstr(win, margin[MLFT], 1, header.c_str());
-    }
-    int i;
-    for(i = 0; i + scroll < num_items && i - scroll < fieldheight; i++){
-        wmove(win, i + margin[MTOP] + scroll, margin[MLFT]);
-        if(i + scroll == selection && has_focus){
-            wattron(win, A_UNDERLINE);
-            wattron(win, A_STANDOUT);
-            waddstr(win, listitems[i + scroll].name.c_str());
-            wattroff(win, A_UNDERLINE);
-            wattroff(win, A_STANDOUT);
-
-        }
-        else{
-            waddstr(win, listitems[i + scroll].name.c_str());
-        }
-        std::string abs_level = std::to_string(evaluate(find_rel_lvl(listitems[i+scroll])));
-        wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[1] + 1);
-        waddstr(win, abs_level.c_str());
-        
-        wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[2] + 1);
-        waddstr(win, find_rel_lvl(listitems[i+scroll]).c_str());
-        
-        std::string invested = "[" + std::to_string(listitems[i + scroll].points) + "]";
-        wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[3] + 1);
-        waddstr(win, invested.c_str());
-        wmove(win, cury, curx);
-    }
-    if(has_focus){ wattron(win, COLOR_PAIR(2)); }
-    box(win, 0, 0);
-    if(has_focus){ wattroff(win, COLOR_PAIR(2)); }
-    wnoutrefresh(win);
-    update_panels();
-    doupdate();
-    wmove(win, cury, curx);
-}
 
 //----------------------------------------[Read/Write/Edit]----------------------------------------
 
@@ -177,7 +143,7 @@ static int read_db_callback(void* data, int argc, char** argv, char** azColName)
     if(argv[3]) temp.diff = argv[3][0];
     if(argv[4]) temp.desc = std::string(argv[4]);
     if(argv[5]) std::stringstream(argv[5]) >> temp.points;
-    std::vector<skill>* skills  = reinterpret_cast<std::vector<skill>*>(data);
+    std::vector<skill>* skills = reinterpret_cast<std::vector<skill>*>(data);
     skills->push_back(temp);
     return 0;
 }
@@ -189,7 +155,7 @@ void ListSkills::read_db(){
     skill temp;
     const char* sql = "SELECT id,name,base,diff,description,points FROM skills";
     char* zErrMsg = 0;
-    int rc = sqlite3_exec(savefile, sql, read_db_callback, (void*)&listitems, &zErrMsg);
+    int rc = sqlite3_exec(savefile, sql, read_db_callback, (void*)&skillvec, &zErrMsg);
     if(rc != SQLITE_OK){
         std::string errstr = "SQLite error: ";
         errstr += zErrMsg;
@@ -210,7 +176,7 @@ void ListSkills::add_item(){
         e.setTitle("Enter Description");
         e.listen();
         newskill.desc = e.toString();
-        listitems.push_back(newskill);
+        skillvec.push_back(newskill);
         std::string sql = "INSERT INTO skills (name,base,diff,description,points) VALUES (";
         sql += to_string(newskill) + ");";
         char* zErrMsg = 0;
@@ -232,15 +198,15 @@ void ListSkills::remove_item(){
 
 void ListSkills::edit_item(){
     Editor e;
-    e.setTitle(listitems[selection].name);
+    e.setTitle(skillvec[selection].name);
     e.show();
-    e.fill(listitems[selection].desc);
+    e.fill(skillvec[selection].desc);
     e.update();
     e.listen();
     if(e.has_changed()){
-        listitems[selection].desc = e.toString();
-        std::string sql = "UPDATE skills SET description='" + listitems[selection].desc
-            + "' WHERE id=" + std::to_string(listitems[selection].id) + ";";
+        skillvec[selection].desc = e.toString();
+        std::string sql = "UPDATE skills SET description='" + skillvec[selection].desc
+            + "' WHERE id=" + std::to_string(skillvec[selection].id) + ";";
         char* zErrMsg = 0;
         int rc = sqlite3_exec(savefile, sql.c_str(), null_callback, NULL, &zErrMsg);
         if(rc != SQLITE_OK){
@@ -257,17 +223,17 @@ void ListSkills::edit_item(){
 void ListSkills::investPoints(int howmany){
     if(gchar_data.unspent_points - howmany < 0) { return; }
     gchar_data.unspent_points -= howmany;
-    listitems[selection].points += howmany;
+    skillvec[selection].points += howmany;
     std::string s = std::to_string(howmany);
-    std::string id = std::to_string(listitems[selection].id);
+    std::string id = std::to_string(skillvec[selection].id);
     std::string sql = "BEGIN;";
-    sql += "UPDATE skills SET points =  points + " + s + " WHERE id = " + id + ";";
-    sql += "UPDATE character SET points = points - " + s + " WHERE id = 1;";
+    sql += "UPDATE skills SET points = points + " + s + " WHERE id = " + id + ";";
+    sql += "UPDATE character SET unspentpoints = unspentpoints - " + s + " WHERE id = 1;";
     sql += "COMMIT;";
     char* zErrMsg = 0;
     int rc = sqlite3_exec(savefile, sql.c_str(), null_callback, NULL, &zErrMsg);
     if(rc != SQLITE_OK){
-        std::string errstr = "SQLite error: ";
+        std::string errstr = "SQLite error (Invest Points): ";
         errstr += zErrMsg;
         sqlite3_free(zErrMsg);
         throw std::runtime_error(errstr);

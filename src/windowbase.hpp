@@ -1,4 +1,4 @@
-//window.hpp
+//windowbase.hpp
 
 #pragma once
 
@@ -34,6 +34,8 @@ class DiceWin{
         bool has_footer;
         bool has_focus;
         bool has_header;
+        int defaultcursor;
+        int prev_cursor;
         int curx;
         int cury;
         int fieldheight;

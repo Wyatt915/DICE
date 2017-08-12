@@ -20,71 +20,22 @@
 #include "roller.hpp"
 #include "sqlite3.h"
 
+//#include <filesystem>
+#include <atomic>
+#include <dirent.h>
 #include <iostream>
 #include <ncurses.h>
 #include <panel.h>
 #include <stdexcept>
 #include <string>
+#include <thread>
+#include <unistd.h>
 #include <vector>
 
 
 sqlite3* savefile; //Global variable
 
 gurps_cdata gchar_data; //global character data struct
-
-void rollertest(){
-    refresh();
-    Roller r;
-    r.update();
-    r.listen();
-}
-
-void lvtest(){
-    try{
-        int SCREENH, SCREENW;
-        getmaxyx(stdscr, SCREENH, SCREENW);
-        WinPos dims;
-        dims.x = 0;
-        dims.y = 0;
-        dims.w = SCREENW/3;
-        dims.h = SCREENH;
-        
-        ListSkills l1(dims);
-        l1.show();
-        l1.give_focus();
-        l1.update();
-        
-        Roller r;
-        r.hide();
-        refresh();
-        update_panels();
-        doupdate();
-        int c;
-        while((c = getch()) != 'q'){
-            if(c == ' '){
-                l1.revoke_focus();
-                r.show();
-                r.roll("3d6");
-                r.update();
-                r.listen();
-                r.hide();
-                update_panels();
-                refresh();
-            }
-            else{
-                l1.give_focus();
-                l1.process(c);
-            }
-        }
-        endwin();
-    }
-    catch(std::exception& e){
-        endwin();
-        std::cout << e.what() << "\n";
-        getch();
-        throw e;
-    }
-}
 
 void multiwindowtest(){
     try{
@@ -102,7 +53,7 @@ void multiwindowtest(){
         windows[1] = new ListItems(dims);
         
         windows[0]->show();
-        windows[0]->update();
+        windows[0]->give_focus();
         windows[1]->show();
         windows[1]->update();
         
@@ -123,14 +74,12 @@ void multiwindowtest(){
                 r.hide();
                 windows[currentWindow]->give_focus();
                 update_panels();
-                refresh();
+                //refresh();
             }
             else if (c == '\t'){
                 windows[currentWindow]->revoke_focus();
-                windows[currentWindow]->update();
                 currentWindow = (++currentWindow) % numwindows;
                 windows[currentWindow]->give_focus();
-                windows[currentWindow]->update();
             }
             else{
                 windows[currentWindow]->process(c);
@@ -156,37 +105,93 @@ void start_curses(){
     noecho();
     keypad(stdscr, TRUE);            
     start_color();
-    if(can_change_color()){
-        init_color(COLOR_BLACK, 137, 173, 192);
-        init_color(COLOR_BLUE, 100, 300, 700);
-        init_color(COLOR_YELLOW, 941, 776, 454);
-    }   
-    else{
-        move(3,0);
-        addstr("Custom colors not supported on this terminal.");
-    } 
+    set_escdelay(10);
+    curs_set(0);
+    //if(can_change_color()){
+    //    init_color(COLOR_BLACK, 137, 173, 192);
+    //    init_color(COLOR_BLUE, 100, 300, 700);
+    //    init_color(COLOR_YELLOW, 941, 776, 454);
+    //}   
+    //else{
+    //    move(3,0);
+    //    addstr("Custom colors not supported on this terminal.");
+    //} 
+}
+
+void open(char* f){
+    //namespace fs = std::filesystem;
+    std::string filename = "";
+    if(f){
+        filename = f;
+    }
+    int rc = -1;
+    while(rc != SQLITE_OK){
+        if(filename == ""){
+            DIR *dpdf;
+            struct dirent *epdf;
+            dpdf = opendir("./");
+            std::vector<std::string> fileList;
+            if (dpdf){
+                std::string currentfile;
+                int i = 0;
+                while(epdf = readdir(dpdf)){
+                    currentfile = epdf->d_name;
+                    if(currentfile.find(".rpg") != std::string::npos){
+                        std::cout << i << ": " << currentfile << '\n';
+                        fileList.push_back(currentfile);
+                        i++;
+                    }
+                }
+                closedir(dpdf);
+                std::cout << "Please select one of the numbers listed above, or enter a filename:\n";
+                int choice;
+                std::cin >> choice;
+                filename = fileList[choice];
+            }
+        }
+        rc = sqlite3_open_v2(filename.c_str(), &savefile, SQLITE_OPEN_READWRITE, NULL);
+    }
+}
+
+void marquee(std::atomic<bool>& keepgoing){
+    std::string msg = "This marquee is too long to display all at once.";
+    std::string mrq;
+    int start = 0;
+    int l = msg.length();
+    while(keepgoing){
+        for(int i = 0; i < 10; i++){
+            mrq += msg[(i + start) % l];
+        }
+        mvaddstr(30, 125, mrq.c_str());
+        refresh();
+        mrq = "";
+        start++;
+        start %= l;
+        usleep(250000);
+    }
 }
 
 int main(int argc, char* argv[]){
-    start_curses();
-    set_escdelay(10);
-
     try{
-        int rc = sqlite3_open(argv[1], &savefile);
-        if(rc != SQLITE_OK){ throw std::runtime_error("Failed to open database."); }
+        open(argv[1]);
+        start_curses();
         load_cdata();
         //lvtest();
+        //std::atomic<bool> keepgoing {true};
+        //std::thread marqueethread(marquee, std::ref(keepgoing));
         multiwindowtest();
-        sqlite3_close(savefile);
+        //keepgoing = false;
+        //marqueethread.join();
+        if(savefile) sqlite3_close(savefile);
     }
     catch(std::runtime_error& e){
-        sqlite3_close(savefile);
+        if(savefile) sqlite3_close(savefile);
         endwin();
         std::cerr << e.what() << "\n";
         return 1;
     }
     catch(std::exception& e){
-        sqlite3_close(savefile);
+        if(savefile) sqlite3_close(savefile);
         endwin();
         std::cerr << e.what() << "\n";
         return 1;

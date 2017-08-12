@@ -34,7 +34,7 @@ class ListSkills : public ListView{
         void read_db();
         //void show();
         //void hide();
-        virtual void update();
+        //virtual void update();
         //virtual void setFooter(std::string);
         //virtual void setHeader(std::string);
         //virtual void setTitle(std::string);
@@ -42,8 +42,7 @@ class ListSkills : public ListView{
         ~ListSkills();
     private:
         bool created;
-        int tabstops[4];
-        std::vector<skill> listitems;
+        std::vector<skill> skillvec;
 };
 
 //////////////////////////////////////////////////////

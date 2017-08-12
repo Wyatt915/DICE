@@ -1,6 +1,6 @@
 //window.cpp
 
-#include "window.hpp"
+#include "windowbase.hpp"
 
 #include <ncurses.h>
 #include <panel.h>
@@ -18,6 +18,7 @@ DiceWin::DiceWin(){
     fieldheight-= margin[MTOP] + margin[MBOT];
     has_focus = false;
     scroll = 0;
+    prev_cursor = 0;
 }
 
 DiceWin::DiceWin(WinPos def){
@@ -31,6 +32,7 @@ DiceWin::DiceWin(WinPos def){
     fieldheight-= margin[MTOP] + margin[MBOT];
     scroll = 0;
     has_focus = false;
+    prev_cursor = 0;
 }
 
 DiceWin::~DiceWin(){
@@ -41,10 +43,12 @@ DiceWin::~DiceWin(){
 
 void DiceWin::give_focus(){
     has_focus = true;
+    update();
 }
 
 void DiceWin::revoke_focus(){
     has_focus = false;
+    update();
 }
 
 void DiceWin::setTitle(std::string t){
@@ -52,12 +56,14 @@ void DiceWin::setTitle(std::string t){
 }
 
 void DiceWin::show(){
-   show_panel(pan);
-   update_panels();
-   doupdate();
+    prev_cursor = curs_set(defaultcursor);
+    show_panel(pan);
+    update_panels();
+    doupdate();
 }
 
 void DiceWin::hide(){
+    curs_set(prev_cursor);
     hide_panel(pan);
     update_panels();
     doupdate();

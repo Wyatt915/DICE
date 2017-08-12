@@ -2,7 +2,7 @@
 #pragma once
 
 #include "utils.hpp"
-#include "window.hpp"
+#include "windowbase.hpp"
 #include <string>
 #include <vector>
 
@@ -40,7 +40,6 @@ class Editor : public DiceWin{
         void fill(std::string); //fill the buffer with the supplied string
         ~Editor();
     private:
-        int prev_cursor_vis;
         bool edited;
         int mode;
         std::vector<std::string> buffer;

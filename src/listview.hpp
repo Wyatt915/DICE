@@ -25,10 +25,13 @@ class ListView : public DiceWin{
         void setFooter(std::string);
         void setHeader(std::string);
         void listen();
+        void update();
         virtual ~ListView();
     protected:
         int num_items;
         int selection;
+        int tabstops[4];
+        std::vector<std::vector<std::string> > contents;
 };
 
 //////////////////////////////////////////////////////

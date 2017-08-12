@@ -15,11 +15,12 @@
 #include "characterdata.hpp"
 #include "editor.hpp"
 #include "list_items.hpp"
+#include "parse.hpp"
 #include "sqlite3.h"
 #include "utils.hpp"
-#include "parse.hpp"
 
 #include <ctype.h>
+#include <iomanip>
 #include <ncurses.h>
 #include <panel.h>
 #include <sstream>
@@ -28,10 +29,20 @@
 extern sqlite3* savefile;
 extern gurps_cdata gchar_data;
 
+//name, weight, cost, quantity
+std::vector<std::string> disp_as_strvec(item t){
+    std::vector<std::string> out;
+    std::stringstream ss;
+    out.push_back(t.name);
+    ss << std::fixed << std::setprecision(2) << t.weight;
+    out.push_back(ss.str());
+    out.push_back(std::to_string(t.cost));
+    out.push_back(std::to_string(t.quantity));
+    return out;
+}
 //-------------------------------------[Constructor/Destructor]-------------------------------------
 
 ListItems::ListItems(WinPos def):ListView(def){
-    curs_set(0); //invisible cursor
     try{
         read_db();
     }
@@ -44,6 +55,10 @@ ListItems::ListItems(WinPos def):ListView(def){
     std::string head = createHeader();
     setHeader(head);
     has_footer = false;
+
+    for(item t : inventory){
+        contents.push_back(disp_as_strvec(t));
+    }
 
     curx = margin[MLFT];
     cury = margin[MTOP];
@@ -74,52 +89,6 @@ std::string ListItems::createHeader(){
 
 //---------------------------------------[ncurses functions]---------------------------------------
 
-void ListItems::update(){
-    wmove(win, 0, 0);
-    wclrtobot(win);
-    
-    init_pair(1, COLOR_BLUE, COLOR_BLACK);
-    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
-    
-    if(has_header){
-        mvwaddstr(win, margin[MLFT], 1, header.c_str());
-    }
-    int i;
-    for(i = 0; i + scroll < num_items && i - scroll < fieldheight; i++){
-        wmove(win, i + margin[MTOP] + scroll, margin[MLFT]);
-        if(i + scroll == selection && has_focus){
-            wattron(win, A_UNDERLINE);
-            wattron(win, A_STANDOUT);
-            waddstr(win, inventory[i + scroll].name.c_str());
-            wattroff(win, A_UNDERLINE);
-            wattroff(win, A_STANDOUT);
-
-        }
-        else{
-            waddstr(win, inventory[i + scroll].name.c_str());
-        }
-        
-        std::string weight = std::to_string(inventory[i + scroll].weight);
-        std::string cost = std::to_string(inventory[i + scroll].cost);
-        std::string quantity = std::to_string(inventory[i + scroll].quantity);
-        
-        wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[1] + 1);
-        waddstr(win, weight.c_str());
-        
-        wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[2] + 1);
-        waddstr(win, cost.c_str());
-        
-        wmove(win, i + margin[MTOP] + scroll, margin[MLFT] + tabstops[3] + 1);
-        waddstr(win, quantity.c_str());
-    }
-    if(has_focus){ wattron(win, COLOR_PAIR(2)); }
-    box(win, 0, 0);
-    if(has_focus){ wattroff(win, COLOR_PAIR(2)); }
-    wnoutrefresh(win);
-    update_panels();
-    doupdate();
-    wmove(win, cury, curx);
-}
 
 //----------------------------------------[Read/Write/Edit]----------------------------------------
 

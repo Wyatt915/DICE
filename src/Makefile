@@ -1,7 +1,7 @@
 CC=gcc
 CXX=g++
 CXXFLAGS=-c -g -std=c++14
-LNFLAGS=-lpanel -lncurses
+LNFLAGS=-lpanel -lncurses -lpthread
 
 EXEC = dice
 SOURCES = $(wildcard *.cpp)
@@ -12,7 +12,7 @@ $(EXEC): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(LNFLAGS) -o $(EXEC)
  
 sqlite3.o: sqlite3.c
-	$(CC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -Wall -Werror -Wno-unused sqlite3.c -c
+	$(CC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -Wall -Werror -Wno-unused sqlite3.c -c -Os
 
 # To obtain object files
 %.o: %.cpp

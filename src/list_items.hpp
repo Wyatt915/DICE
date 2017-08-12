@@ -33,7 +33,7 @@ class ListItems : public ListView{
         void read_db();
         //void show();
         //void hide();
-        virtual void update();
+        //virtual void update();
         //virtual void setFooter(std::string);
         //virtual void setHeader(std::string);
         //virtual void setTitle(std::string);
@@ -41,7 +41,6 @@ class ListItems : public ListView{
         ~ListItems();
     private:
         bool created;
-        int tabstops[4];
         std::vector<item> inventory;
 };
 
