@@ -1,15 +1,3 @@
-/***************************************************************************************************
-*                                                                                                  *
-*                                        DICE source file                                          *
-*   File:      list_skills.cpp                                                                     *
-*   Author:    Wyatt Sheffield                                                                     *
-*                                                                                                  *
-*   Displays a verticall scroll window containing a list of all a character's skills, including    *
-*   their difficulty and relative level.                                                           *
-*                                                                                                  *
-*                               Copyright (c) 2017 Wyatt Sheffield                                 *
-*                                                                                                  *
-***************************************************************************************************/
 
 #include "characterdata.hpp"
 #include "editor.hpp"

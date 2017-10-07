@@ -1,0 +1,17 @@
+@@author       :Wyatt Sheffield
+@@project      :DICE source file
+
+
+attributes     :Window to display the Character's basic attributes such as Strength, Will, swing damage, cash on hand, unspent points, etc.
+characterdata  :Defines structures to hold basic global data for the character.
+editor         :A very minimal text editor. Users may press i to edit data, and press esc to return to normal mode. Pressing q exits.
+font           :Defines the ASCII art characters used by the roller. Uses the 'roman' font from figlet [http://www.figlet.org/].
+gurpslogic     :
+list_items     :Displays the character's (non-weapon) inventory.
+list_skills    :Displays the character's known skills.
+listview       :Defines a base class for viewing lists. Children of ListView are expected to store their elements in whatever way seems fit, and define a way to convert each element into a vector of strings to be displayed.
+main           :Contains the main method, a few globals, and some initialization.
+parse          :Parses and executes mathematical expressions. Expressions may include an attribute abbreviation (e.g. ST for strength) or the name of a skill, which will have the relevant value substituted in at evaluation-time.
+roller         :Displays the result of a dice roll (3d6 by default). Any valid expression as defined by [parse] may be entered and evaluated.
+utils          :
+dicewin        :Defines the base window class from which all other window types inherit.

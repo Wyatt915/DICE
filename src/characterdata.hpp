@@ -19,6 +19,7 @@ struct attribute{
     std::string base = "";
     bool primary = true;
     int level = 0;
+    bool isDynamic = false; //can it have a regularly changing value? e.g. fp can change throughout a battle.
     int currentvalue = 0;
     int points = 0;
     int cost = 1; //We divide by this value, so make it non zero by default
@@ -30,6 +31,7 @@ typedef struct gurps_cdata{
     int unspent_points = 0;
     int starting_cash = 0;
     int current_cash = 0;
+    double burden = 0.0;
     std::map<std::string, attribute> attributes;
     std::string thrust = "";
     std::string swing = "";

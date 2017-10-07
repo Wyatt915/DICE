@@ -1,20 +1,10 @@
-/***************************************************************************************************
-*                                                                                                  *
-*                                        DICE source file                                          *
-*   File:      characterdata.cpp                                                                   *
-*   Author:    Wyatt Sheffield                                                                     *
-*                                                                                                  *
-*   Defines structures to hold basic global data for the character.                                *
-*                                                                                                  *
-*                               Copyright (c) 2017 Wyatt Sheffield                                 *
-*                                                                                                  *
-***************************************************************************************************/
-
 #include "characterdata.hpp"
+#include "parse.hpp"
 #include "sqlite3.h"
+#include "utils.hpp"
+
 #include <sstream>
 #include <stdexcept>
-#include "parse.hpp"
 
 extern sqlite3* savefile;
 extern gurps_cdata gchar_data;

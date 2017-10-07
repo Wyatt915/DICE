@@ -3,6 +3,9 @@
 #include <vector>
 #include <string>
 
+typedef std::vector<std::string> vstr_t;
+typedef std::vector<std::vector<std::string> > vvstr_t;
+
 template<class Element_type, class Container_type>
 bool is_in_list(Element_type item, Container_type list){
     for(Element_type element : list){
@@ -26,6 +29,10 @@ struct WinPos{
     int w = 0;
     int h = 0;
 };
+
+//wraps a vector of strings in another vector
+vvstr_t vstr_to_vvstr(vstr_t);
+
 
 //////////////////////////////////////////////////////
 //                                                  //

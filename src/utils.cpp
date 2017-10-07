@@ -24,6 +24,14 @@ int max_length_in_list(std::vector<std::string>& l){
     return out;
 }
 
+vvstr_t vstr_to_vvstr(vstr_t in){
+    vvstr_t out;
+    for(int i = 0; i < in.size(); i++){
+        out.push_back(std::vector<std::string>(1,in[i]));
+    }
+    return out;
+}
+
 //////////////////////////////////////////////////////
 //                                                  //
 //      oooooooooo.    o8o                          //

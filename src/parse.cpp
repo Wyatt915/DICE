@@ -1,15 +1,14 @@
-/*
- *  DICE source file
- *  parse.cpp
- *  
- */
-
+#include "characterdata.hpp"
 #include "parse.hpp"
 #include "utils.hpp"
+#include "sqlite3.h"
 
 #include <stdlib.h>
 #include <stdexcept>
 #include <ctype.h>
+
+extern sqlite3* savefile;
+extern gurps_cdata gchar_data;
 
 std::string operators = "dDxX+-*/@()";
 
@@ -58,7 +57,7 @@ TokenStack& TokenStack::operator=(const TokenStack& other){
 }
 
 TokenStack::~TokenStack(){
-    delete data;
+    delete[] data;
 }
 
 int TokenStack::size(){
@@ -170,25 +169,25 @@ TokenStack infix_to_postfix(std::vector<Token> list){
                 postfix.push(t);
                 i++;
             }
-            //Case 2: If the stack is empty or contains a left parenthesis on
-            //top, push the incoming operator onto the stack.
-            else if (opstack.is_empty() || opstack.peek().value == '('){
-                opstack.push(t);
-                i++;
-            }
-            //Case 3: If the incoming symbol is a left parenthesis, push it on
+            //Case 2: If the incoming symbol is a left parenthesis, push it on
             //the stack.
             else if (t.value == '('){
                 opstack.push(t);
                 i++;
             }
-            //Case 4: If the incoming symbol is a right parenthesis, pop the
+            //Case 3: If the incoming symbol is a right parenthesis, pop the
             //stack and print the operators until you see a left parenthesis.
             else if (t.value == ')'){
-                while(opstack.peek().value != '('){
+                while(opstack.peek().value != '(' && opstack.size() > 0){
                     postfix.push(opstack.pop());
                 }
                 opstack.pop();//discard parentheses
+                i++;
+            }
+            //Case 4: If the stack is empty or contains a left parenthesis on
+            //top, push the incoming operator onto the stack.
+            else if (opstack.is_empty() || opstack.peek().value == '('){
+                opstack.push(t);
                 i++;
             }
             //Case 5: If the incoming symbol has higher precedence than the

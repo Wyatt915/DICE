@@ -1,19 +1,9 @@
-/***************************************************************************************************
-*                                                                                                  *
-*                                        DICE source file                                          *
-*   File:      main.cpp                                                                            *
-*   Author:    Wyatt Sheffield                                                                     *
-*                                                                                                  *
-*   Contains the main() function, startup, and cleanup routines. Also defines a few global         *
-*   variables like the database connection to the savefile and a structure to hold data about      *
-*   the character in memory.                                                                       *
-*                                                                                                  *
-*                               Copyright (c) 2017 Wyatt Sheffield                                 *
-*                                                                                                  *
-***************************************************************************************************/
-
+#include "basicinfo.hpp"
 #include "characterdata.hpp"
+#include "dicewin.hpp"
 #include "editor.hpp"
+#include "flames.hpp"
+#include "list_adv.hpp"
 #include "list_items.hpp"
 #include "list_skills.hpp"
 #include "parse.hpp"
@@ -31,6 +21,7 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
+#include <functional>
 
 
 sqlite3* savefile; //Global variable
@@ -39,24 +30,33 @@ gurps_cdata gchar_data; //global character data struct
 
 void multiwindowtest(){
     try{
-        int numwindows = 2;
+        int numwindows = 5;
         int SCREENH, SCREENW;
         getmaxyx(stdscr, SCREENH, SCREENW);
         WinPos dims;
-        dims.x = 0;
-        dims.y = 0;
-        dims.w = SCREENW/3;
-        dims.h = SCREENH;
-        ListView** windows = new ListView*[numwindows];
-        windows[0] = new ListSkills(dims);
-        dims.x = dims.w +1;
-        windows[1] = new ListItems(dims);
+        DiceWin** windows = new DiceWin*[numwindows];
+        dims.x = 0; dims.y = 0; dims.w = (2*SCREENW)/3 + 1; dims.h = 10;
+        windows[0] = new BasicInfo(dims);
+        
+        dims.y = dims.h; dims.h = ((SCREENH - dims.h) / 2) - 1; dims.w = (SCREENW / 3) - 1;
+        windows[1] = new ListAdv(dims);
+        dims.y += dims.h;
+        windows[2] = new ListAdv(dims);
+        
+        
+        dims.x += dims.w + 1; dims.y = 10; dims.h = SCREENH - 10;
+        windows[3] = new ListSkills(dims);
+        dims.x += dims.w + 1;
+        windows[4] = new ListItems(dims);
         
         windows[0]->show();
         windows[0]->give_focus();
-        windows[1]->show();
-        windows[1]->update();
         
+        for(int i = 1; i < numwindows; i++){
+            windows[i]->show();
+            windows[i]->update();
+        }
+
         Roller r;
         r.hide();
         refresh();
@@ -107,6 +107,7 @@ void start_curses(){
     start_color();
     set_escdelay(10);
     curs_set(0);
+    //timeout(0);
     //if(can_change_color()){
     //    init_color(COLOR_BLACK, 137, 173, 192);
     //    init_color(COLOR_BLUE, 100, 300, 700);
@@ -130,23 +131,52 @@ void open(char* f){
             DIR *dpdf;
             struct dirent *epdf;
             dpdf = opendir("./");
-            std::vector<std::string> fileList;
+            vvstr_t fileList;
             if (dpdf){
                 std::string currentfile;
                 int i = 0;
                 while(epdf = readdir(dpdf)){
                     currentfile = epdf->d_name;
                     if(currentfile.find(".rpg") != std::string::npos){
-                        std::cout << i << ": " << currentfile << '\n';
-                        fileList.push_back(currentfile);
-                        i++;
+                        fileList.push_back(vstr_t(1,currentfile));
                     }
                 }
                 closedir(dpdf);
-                std::cout << "Please select one of the numbers listed above, or enter a filename:\n";
+                //Fireplace fire;
+                ListView select;
+                select.setContents(fileList);
+                select.show();
+                select.give_focus();
+                select.update();
+                update_panels();
+                refresh();
+                int c;
                 int choice;
-                std::cin >> choice;
-                filename = fileList[choice];
+                bool keepListening = true;
+                while(keepListening){
+                    c = getch();
+                    switch(c){
+                    case KEY_UP:
+                        select.move_up();
+                        break;
+                    case KEY_DOWN:
+                        select.move_down();
+                        break;
+                    case 10:
+                    case 13:
+                    case KEY_ENTER:
+                        select.getSelection(choice);
+                        keepListening = false;
+                        break;
+                    }
+                    select.update();
+                    //fire.animate();
+                    //update_panels();
+                    //doupdate();
+                    refresh();
+                }
+                filename = fileList[choice][0];
+                select.hide();
             }
         }
         rc = sqlite3_open_v2(filename.c_str(), &savefile, SQLITE_OPEN_READWRITE, NULL);
@@ -173,8 +203,8 @@ void marquee(std::atomic<bool>& keepgoing){
 
 int main(int argc, char* argv[]){
     try{
-        open(argv[1]);
         start_curses();
+        open(argv[1]);
         load_cdata();
         //lvtest();
         //std::atomic<bool> keepgoing {true};

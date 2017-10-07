@@ -1,6 +1,6 @@
 //window.cpp
 
-#include "windowbase.hpp"
+#include "dicewin.hpp"
 
 #include <ncurses.h>
 #include <panel.h>

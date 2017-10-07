@@ -9,9 +9,6 @@
 #define MBOT 2  //bottom margin
 #define MLFT 3  //left margin
 
-typedef struct _win_st WINDOW;
-typedef struct panel PANEL;
-
 class ListView : public DiceWin{
     public:
         ListView();
@@ -19,11 +16,14 @@ class ListView : public DiceWin{
         bool move_down();
         bool move_up();
         int numlines();
+        void process(int);
         //virtual void add_item() = 0;
         //virtual void edit_item() = 0;
         //virtual void init() = 0;
+        void setContents(vvstr_t);
         void setFooter(std::string);
         void setHeader(std::string);
+        vstr_t getSelection(int&);
         void listen();
         void update();
         virtual ~ListView();
@@ -31,7 +31,7 @@ class ListView : public DiceWin{
         int num_items;
         int selection;
         int tabstops[4];
-        std::vector<std::vector<std::string> > contents;
+        vvstr_t contents;
 };
 
 //////////////////////////////////////////////////////

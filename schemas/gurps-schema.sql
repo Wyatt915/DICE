@@ -1,9 +1,11 @@
 /*
 *   DICE database schema for GURPS
-*   Version 0.0.3
+*   Version 0.0.4
 */
 
 ---------------------------------------[Attributes and Skills]-------------------------------------
+
+PRAGMA application_id = 1147757413; --"Dice" in ASCII :)
 
 CREATE TABLE IF NOT EXISTS 'character'(
     id INTEGER PRIMARY KEY,
@@ -55,9 +57,10 @@ INSERT INTO secondary (name, abbr, cost, base) VALUES
     ('BASIC MOVE',      'BM',   5,      '(HT+DX)/4');
 
 /* Contains both advantages and disadvantages */
-CREATE TABLE IF NOT EXISTS 'prosandcons' (
+CREATE TABLE IF NOT EXISTS 'advantages' (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
+    points INTEGER,
     minimum INTEGER,    --Minimum number of points to unlock the first lvl
     cost INTEGER,       --Cost per lvl after minimum, if applicable. If NULL, the player must enter the cost manually.
     maxLevel INTEGER,   --some advantages have a cap, others do not.
@@ -69,7 +72,7 @@ CREATE TABLE IF NOT EXISTS 'skills' (
     name TEXT NOT NULL,
     base TEXT NOT NULL, --ST, DX, etc. or another skill name
     diff TEXT NOT NULL, --EASY, AVERAGE, HARD, VERY HARD
-    points INTEGER,       --points points into skill
+    points INTEGER,     --points invested into skill
     description TEXT
 );
 

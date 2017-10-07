@@ -180,6 +180,7 @@ Editor::Editor(WinPos w, std::string in):DiceWin(w){
 }
 
 void Editor::init(){
+    wtimeout(win, -1);
     title = "";
     defaultcursor = 1;
     edited = false;

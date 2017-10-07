@@ -1,3 +1,4 @@
+#include "utils.hpp"
 #include "editor.hpp"
 #include "listview.hpp"
 #include "sqlite3.h"
@@ -5,6 +6,7 @@
 #include <algorithm>
 #include <ncurses.h>
 #include <panel.h>
+#include <functional>
 
 extern sqlite3* savefile;
 
@@ -19,6 +21,20 @@ ListView::ListView(WinPos def):DiceWin(def){
 }
 
 ListView::~ListView(){
+}
+
+void ListView::process(int in){
+    //do nothing
+}
+
+void ListView::setContents(vvstr_t entries){
+    contents = entries;
+    num_items = entries.size();
+}
+
+vstr_t ListView::getSelection(int& idx){
+    idx = selection;
+    return contents[selection];
 }
 
 void ListView::listen(){

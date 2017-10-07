@@ -1,16 +1,3 @@
-/***************************************************************************************************
-*                                                                                                  *
-*                                        DICE source file                                          *
-*   File:      list_items.cpp                                                                      *
-*   Author:    Wyatt Sheffield                                                                     *
-*                                                                                                  *
-*   Defines a vertically scrolling window that displays the character's inventory, excluding       *
-*   weapons and armor. The player may use this window to buy and sell items, view an item's        *
-*   lore or description, and add or create new items.                                              *
-*                                                                                                  *
-*                               Copyright (c) 2017 Wyatt Sheffield                                 *
-*                                                                                                  *
-***************************************************************************************************/
 
 #include "characterdata.hpp"
 #include "editor.hpp"
@@ -53,8 +40,10 @@ ListItems::ListItems(WinPos def):ListView(def){
 
     setTitle("Skills");
     std::string head = createHeader();
+    std::string foot = createFooter();
     setHeader(head);
-    has_footer = false;
+    setFooter(foot);
+    has_footer = true;
 
     for(item t : inventory){
         contents.push_back(disp_as_strvec(t));
@@ -62,11 +51,21 @@ ListItems::ListItems(WinPos def):ListView(def){
 
     curx = margin[MLFT];
     cury = margin[MTOP];
+    
+
+    
     update_panels();
     doupdate();
 }
 
 ListItems::~ListItems(){
+}
+
+std::string ListItems::createFooter(){
+    //std::string out(16, ' ');
+    std::string out;
+    out = std::to_string(sum_weight());
+    return out;
 }
 
 std::string ListItems::createHeader(){
@@ -85,6 +84,14 @@ std::string ListItems::createHeader(){
     }
     h += data[3];
     return h;
+}
+
+double ListItems::sum_weight(){
+    double w = 0.0;
+    for(item i : inventory){   
+        w += i.weight;
+    }
+    return w;
 }
 
 //---------------------------------------[ncurses functions]---------------------------------------

@@ -1,4 +1,4 @@
-//list_items.hpp
+//list_skills.hpp
 
 #pragma once
 
@@ -7,23 +7,22 @@
 #include <string>
 #include <vector>
 
-struct item{
-    unsigned long id = 0;
-    std::string name = "";
-    double weight = 0.0;
-    int cost = 0;
-    int quantity = 0;
-    std::string desc = "";
-    std::string lore = "";
+struct advantage{
+    unsigned long id = 0;    //database ID of the skill
+    std::string name = "";   //Name of the skill
+    std::string desc = "";   //description
+    int points = 0;          //points invested
+    int min;
+    int max;
+    int cost;
 };
 
-class ListItems : public ListView{
+class ListAdv : public ListView{
     public:
         //void scroll(int);
-        ListItems();
-        ListItems(WinPos);
+        ListAdv();
+        ListAdv(WinPos);
         int numlines();
-        double sum_weight();
         void process(int);
         void add_item();
         void remove_item();
@@ -39,11 +38,10 @@ class ListItems : public ListView{
         //virtual void setHeader(std::string);
         //virtual void setTitle(std::string);
         std::string createHeader();
-        std::string createFooter();
-        ~ListItems();
+        ~ListAdv();
     private:
         bool created;
-        std::vector<item> inventory;
+        std::vector<advantage> advantages;
 };
 
 //////////////////////////////////////////////////////
